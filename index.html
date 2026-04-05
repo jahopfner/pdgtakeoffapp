@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDG Takeoff Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root {
+  --navy:#1B3A5C; --navy-dark:#122845; --navy-mid:#2a4f78;
+  --gold:#C9A84C; --gold-light:#e2c47a;
+  --bg:#f5f4f1; --bg2:#eceae5; --surface:#fff;
+  --border:rgba(27,58,92,0.12); --border-strong:rgba(27,58,92,0.22);
+  --text:#1a1a1a; --text-mid:#4a4a4a; --text-muted:#888;
+  --red:#c0392b; --red-bg:#fdf0ee; --radius:8px; --radius-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* TOPBAR */
+.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;padding:0 20px;height:52px;position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--gold);text-transform:uppercase;white-space:nowrap}
+.topbar-sep{width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0}
+.topbar-project{font-size:13px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:6px;min-width:0}
+.topbar-project input{background:transparent;border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:500;outline:none;width:180px}
+.topbar-project input::placeholder{color:rgba(255,255,255,.4)}
+.topbar-right{margin-left:auto;display:flex;gap:6px;align-items:center;flex-shrink:0}
+.save-ind{font-size:11px;color:rgba(255,255,255,.4);font-family:'DM Mono',monospace;white-space:nowrap}
+.btn-sm{font-family:inherit;font-size:12px;padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.8);transition:all .15s;white-space:nowrap}
+.btn-sm:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn-sm.gold{background:var(--gold);border-color:var(--gold);color:var(--navy-dark);font-weight:600}
+.btn-sm.gold:hover{background:var(--gold-light)}
+
+/* PROJECT SWITCHER BAR */
+.proj-bar{background:var(--navy-dark);padding:0 20px;display:flex;align-items:center;gap:8px;height:36px;overflow-x:auto}
+.proj-tab{font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);white-space:nowrap;transition:all .15s;background:transparent}
+.proj-tab:hover{border-color:rgba(255,255,255,.4);color:#fff}
+.proj-tab.active{background:var(--gold);border-color:var(--gold);color:var(--navy-dark);font-weight:600}
+.proj-tab-add{font-size:18px;color:rgba(255,255,255,.4);background:none;border:none;cursor:pointer;padding:0 4px;line-height:1;transition:color .15s}
+.proj-tab-add:hover{color:var(--gold)}
+
+/* TRADE TABS */
+.trade-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:2px}
+.trade-tab{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
+.trade-tab:hover{color:var(--navy)}
+.trade-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
+.trade-panel{display:none}
+.trade-panel.active{display:block}
+
+/* WORKSPACE */
+.workspace{display:flex;gap:20px;max-width:1200px;margin:0 auto;padding:24px 20px 60px;align-items:flex-start}
+.inputs-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.sidebar-col{width:285px;flex-shrink:0;display:flex;flex-direction:column;gap:14px;position:sticky;top:108px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);background:#fafafa}
+.card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--navy)}
+.card-subtitle{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.card-body{padding:14px 16px}
+
+/* PILE CARD accent */
+.card.pile-card .card-header{background:#eef4fb}
+.card.pile-card .card-title{color:#1a5276}
+
+/* COLUMN HEADERS */
+.col-heads{display:grid;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.col-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* DATA ROWS */
+.data-row{display:grid;gap:8px;align-items:center;padding:4px 0}
+.data-row select,.data-row input[type="text"],.data-row input[type="number"]{font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text);width:100%;transition:border-color .15s,box-shadow .15s}
+.data-row select{cursor:pointer}
+.data-row input:focus,.data-row select:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(27,58,92,.08)}
+.data-row input[type="number"]{text-align:right;font-family:'DM Mono',monospace}
+.result-cell{font-family:'DM Mono',monospace;font-size:12px;color:var(--navy);font-weight:500;text-align:right;padding:6px 8px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);white-space:nowrap}
+.result-cell.pile-total{background:#eef4fb;border-color:#aac8e8;color:#1a5276;font-weight:600}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;line-height:1;padding:4px;border-radius:4px;transition:all .1s;display:flex;align-items:center;justify-content:center}
+.del-btn:hover{color:var(--red);background:var(--red-bg)}
+.add-row-btn{font-family:inherit;font-size:12px;color:var(--navy);background:none;border:1px dashed var(--border-strong);border-radius:var(--radius);cursor:pointer;padding:7px 12px;margin-top:8px;width:100%;transition:all .15s;font-weight:500}
+.add-row-btn:hover{background:var(--bg);border-color:var(--navy-mid)}
+
+/* PILE STAGE DIVIDER */
+.pile-stage{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#2471a3;background:#eef4fb;padding:4px 10px;border-radius:4px;margin:10px 0 4px;border:1px solid #aac8e8;display:inline-block}
+
+/* SIDEBAR */
+.totals-grid{display:flex;flex-direction:column;gap:8px}
+.total-item{display:flex;justify-content:space-between;align-items:baseline;padding:8px 12px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)}
+.total-item-label{font-size:12px;color:var(--text-mid)}
+.total-item-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--navy)}
+.total-item.pile{background:#eef4fb;border-color:#aac8e8}
+.total-item.pile .total-item-label{color:#1a5276}
+.total-item.pile .total-item-val{color:#1a5276}
+.total-grand{background:var(--navy);border-radius:var(--radius);padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline}
+.total-grand-label{font-size:12px;color:rgba(255,255,255,.7);font-weight:600}
+.total-grand-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.total-grand-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:600;color:var(--gold)}
+.total-grand-unit{font-size:12px;color:rgba(255,255,255,.5);margin-left:4px}
+
+/* PRESET ROWS */
+.preset-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.preset-row:last-child{border-bottom:none}
+.preset-label{font-size:12px;color:var(--text-mid)}
+.preset-input-wrap{display:flex;align-items:center;gap:4px}
+.preset-input-wrap input{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;text-align:right;width:60px;padding:4px 6px;border:1px solid var(--border-strong);border-radius:5px;background:var(--bg);color:var(--navy);transition:border-color .15s}
+.preset-input-wrap input:focus{outline:none;border-color:var(--navy-mid);background:#fff}
+.preset-unit{font-size:11px;color:var(--text-muted);width:24px}
+.spec-badge{display:inline-flex;align-items:center;font-size:11px;font-family:'DM Mono',monospace;color:var(--navy);background:rgba(27,58,92,.07);border:1px solid rgba(27,58,92,.15);padding:4px 10px;border-radius:20px}
+.flag-amber{font-size:11px;color:#7a5200;background:#fff8e6;border:1px solid #e8c96a;border-radius:var(--radius);padding:8px 10px;line-height:1.5}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:700px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,.2);margin-bottom:40px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.modal-header h3{font-size:15px;font-weight:600;color:var(--navy)}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);line-height:1;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{padding:20px}
+.modal-section{margin-bottom:24px}
+.modal-section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.cat-table{width:100%;border-collapse:collapse;font-size:13px}
+.cat-table th{text-align:left;padding:6px 8px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.cat-table td{padding:5px 4px;border-bottom:1px solid var(--border);vertical-align:middle}
+.cat-table tr:last-child td{border-bottom:none}
+.cat-table input[type="text"],.cat-table input[type="number"]{font-family:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--border-strong);border-radius:5px;background:var(--bg);color:var(--text);width:100%}
+.cat-table input:focus{outline:none;border-color:var(--navy-mid);background:#fff}
+.cat-table input[type="number"]{text-align:right;font-family:'DM Mono',monospace}
+.cat-add-btn{font-family:inherit;font-size:12px;color:var(--navy);background:none;border:1px dashed var(--border-strong);border-radius:var(--radius);cursor:pointer;padding:5px 12px;margin-top:6px;transition:all .15s;font-weight:500}
+.cat-add-btn:hover{background:var(--bg);border-color:var(--navy-mid)}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal-footer-left{display:flex;gap:8px}
+.btn-cancel{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border-strong);background:transparent;cursor:pointer;color:var(--text-mid)}
+.btn-save{font-family:inherit;font-size:13px;font-weight:600;padding:8px 20px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;cursor:pointer}
+.btn-save:hover{background:var(--navy-dark)}
+.btn-outline{font-family:inherit;font-size:12px;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border-strong);background:transparent;cursor:pointer;color:var(--text-mid);transition:all .15s}
+.btn-outline:hover{background:var(--bg);color:var(--text)}
+
+/* EXPORT */
+.export-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+.export-modal.open{display:flex}
+.export-inner{background:var(--surface);border-radius:var(--radius-lg);padding:28px;width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.export-inner h3{font-size:16px;font-weight:600;margin-bottom:6px;color:var(--navy)}
+.export-inner p{font-size:13px;color:var(--text-mid);margin-bottom:16px;line-height:1.5}
+.export-preview{font-size:11px;font-family:'DM Mono',monospace;background:var(--bg);border-radius:var(--radius);padding:12px;margin-bottom:16px;line-height:1.9;max-height:220px;overflow-y:auto;color:var(--text-mid)}
+.export-btns{display:flex;gap:10px;justify-content:flex-end}
+.btn-export{font-family:inherit;font-size:13px;font-weight:600;padding:8px 20px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;cursor:pointer}
+
+/* PROJECTS MODAL */
+.proj-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:250;align-items:center;justify-content:center}
+.proj-modal.open{display:flex}
+.proj-modal-inner{background:var(--surface);border-radius:var(--radius-lg);width:480px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.proj-list{max-height:300px;overflow-y:auto}
+.proj-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.proj-list-item:hover{background:var(--bg)}
+.proj-list-item.active-proj{background:#eef4fb}
+.proj-list-name{font-size:13px;font-weight:500}
+.proj-list-date{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.proj-del{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:2px 6px;border-radius:4px}
+.proj-del:hover{color:var(--red);background:var(--red-bg)}
+.proj-action-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:2px 6px;border-radius:4px}
+.proj-action-btn:hover{color:var(--navy);background:rgba(27,58,92,.08)}
+
+/* MISC */
+.notes-area{width:100%;font-family:inherit;font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius);padding:8px 10px;resize:vertical;min-height:80px;line-height:1.5}
+.notes-area:focus{outline:none;border-color:var(--navy-mid);background:#fff}
+.section-h{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px}
+
+/* SHARED TOGGLE */
+.shared-cb{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin:0}
+.shared-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none}
+.shared-wrap{display:flex;align-items:center;justify-content:center;gap:3px}
+.result-cell.is-shared{background:#fff8e6;border-color:#e8c96a;color:#7a5200}
+.result-cell.is-shared::after{content:' ½';font-size:10px;opacity:.7}
+
+/* SHARED WALL TOGGLE */
+.shared-wrap { display:flex; align-items:center; justify-content:center; }
+.shared-cb { display:none; }
+.shared-label {
+  font-family:'DM Mono',monospace; font-size:10px; font-weight:500;
+  color:var(--text-muted); border:1px solid var(--border-strong);
+  border-radius:5px; padding:3px 5px; cursor:pointer;
+  user-select:none; transition:all .15s; white-space:nowrap;
+  background:var(--bg); display:block; text-align:center; width:100%;
+}
+.shared-cb:checked + .shared-label {
+  background:#fff8e6; border-color:#e8c96a; color:#7a5200; font-weight:600;
+}
+.result-cell.is-shared { background:#fff8e6; border-color:#e8c96a; color:#7a5200; }
+
+@media(max-width:800px){.workspace{flex-direction:column;padding:16px}.sidebar-col{width:100%;position:static}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <span class="topbar-logo">PDG</span>
+  <div class="topbar-sep"></div>
+  <div class="topbar-project">
+    <span style="color:rgba(255,255,255,.45);font-size:11px">Project:</span>
+    <input type="text" id="project-name" placeholder="Project name…" oninput="updateCurrentProjectName(this.value)">
+  </div>
+  <div class="topbar-right">
+    <span class="save-ind" id="save-indicator">Saved</span>
+    <button class="btn-sm" onclick="openSettings()">⚙ Catalogue</button>
+    <button class="btn-sm" onclick="openProjects()">Projects</button>
+    <button class="btn-sm gold" onclick="openExport()">Export PDF</button>
+  </div>
+</div>
+
+<!-- PROJECT SWITCHER BAR -->
+<div class="proj-bar" id="proj-bar">
+  <button class="proj-tab-add" onclick="newProject()" title="New project">＋</button>
+</div>
+
+<!-- TRADE TABS -->
+<div class="trade-tabs">
+  <div class="trade-tab active" onclick="switchTab('concrete',this)">Concrete</div>
+  <div class="trade-tab" onclick="switchTab('framing',this)">Framing</div>
+  <div class="trade-tab" onclick="switchTab('windows',this)">Windows &amp; Doors</div>
+  <div class="trade-tab" onclick="switchTab('drywall',this)">Drywall</div>
+  <div class="trade-tab" onclick="switchTab('notes',this)">Notes</div>
+</div>
+
+<!-- ═══════════ CONCRETE ═══════════ -->
+<div class="trade-panel active" id="tab-concrete">
+<div class="workspace">
+  <div class="inputs-col">
+
+    <!-- STRIP FOOTINGS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Strip Footings</span>
+        <span class="card-subtitle">type → dims auto-loaded · m³</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <button onclick="clearCardData('strips')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+          <button onclick="copyStripsToWalls()" style="font-family:inherit;font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;border:1px solid rgba(27,58,92,.3);background:rgba(27,58,92,.06);color:var(--navy);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='rgba(27,58,92,.12)'" onmouseout="this.style.background='rgba(27,58,92,.06)'">↓ Copy to walls</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:165px 1fr 90px 60px 80px 34px;gap:8px">
+          <span class="col-label">Footing type</span>
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">Length (ft)</span>
+          <span class="col-label" style="text-align:center">Shared</span>
+          <span class="col-label" style="text-align:right">m³</span>
+          <span></span>
+        </div>
+        <div id="strip-rows"></div>
+        <button class="add-row-btn" onclick="addStripRow()">+ Add strip footing run</button>
+      </div>
+    </div>
+
+    <!-- PAD FOOTINGS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Pad Footings</span>
+        <span class="card-subtitle">type → dims auto-loaded · m³</span>
+        <button onclick="clearCardData('pads')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:165px 1fr 70px 80px 34px;gap:8px">
+          <span class="col-label">Pad type</span>
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">Qty</span>
+          <span class="col-label" style="text-align:right">m³</span>
+          <span></span>
+        </div>
+        <div id="pad-rows"></div>
+        <button class="add-row-btn" onclick="addPadRow()">+ Add pad footing</button>
+      </div>
+    </div>
+
+    <!-- CONCRETE PILES -->
+    <div class="card pile-card">
+      <div class="card-header">
+        <span class="card-title">Concrete Piles</span>
+        <span class="card-subtitle">2-stage: cap pad (rect) + shaft (cylinder) · m³ per pile</span>
+        <button onclick="clearCardData('piles')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:165px 1fr 60px 80px 80px 90px 34px;gap:8px">
+          <span class="col-label">Pile type</span>
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">Qty</span>
+          <span class="col-label" style="text-align:right">Cap m³</span>
+          <span class="col-label" style="text-align:right">Shaft m³</span>
+          <span class="col-label" style="text-align:right">Total m³</span>
+          <span></span>
+        </div>
+        <div id="pile-rows"></div>
+        <button class="add-row-btn" onclick="addPileRow()">+ Add pile group</button>
+      </div>
+    </div>
+
+    <!-- FOUNDATION WALLS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Foundation Walls</span>
+        <span class="card-subtitle">type → thickness auto-loaded · height overrideable · m³</span>
+        <button onclick="clearCardData('walls')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:165px 1fr 90px 60px 80px 80px 34px;gap:8px">
+          <span class="col-label">Wall type</span>
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">Length (ft)</span>
+          <span class="col-label" style="text-align:center">Shared</span>
+          <span class="col-label" style="text-align:right">Height (ft)</span>
+          <span class="col-label" style="text-align:right">m³</span>
+          <span></span>
+        </div>
+        <div id="wall-rows"></div>
+        <button class="add-row-btn" onclick="addWallRow()">+ Add wall run</button>
+      </div>
+    </div>
+
+    <!-- SLABS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Slabs on Grade</span>
+        <span class="card-subtitle">type for reference · output in ft²</span>
+        <button onclick="clearCardData('slabs')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:165px 1fr 100px 80px 34px;gap:8px">
+          <span class="col-label">Slab type</span>
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">Area (ft²)</span>
+          <span class="col-label" style="text-align:right">ft²</span>
+          <span></span>
+        </div>
+        <div id="slab-rows"></div>
+        <button class="add-row-btn" onclick="addSlabRow()">+ Add slab</button>
+      </div>
+    </div>
+
+    <!-- DAMPPROOFING -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Dampproofing</span>
+        <span class="card-subtitle">perimeter × (wall ht − 1′) · output in ft²</span>
+        <button onclick="clearCardData('damp')" style="font-family:inherit;font-size:10px;font-weight:500;padding:3px 8px;border-radius:5px;border:1px solid rgba(192,57,43,.25);background:none;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='none';this.style.color='var(--text-muted)';this.style.borderColor='rgba(192,57,43,.25)'">Clear all</button>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 100px 80px 80px 34px;gap:8px">
+          <span class="col-label">Location / description</span>
+          <span class="col-label" style="text-align:right">Length (ft)</span>
+          <span class="col-label" style="text-align:right">Ht (ft)</span>
+          <span class="col-label" style="text-align:right">ft²</span>
+          <span></span>
+        </div>
+        <div id="damp-rows"></div>
+        <button class="add-row-btn" onclick="addDampRow()">+ Add perimeter run</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Concrete Summary</span></div>
+      <div class="card-body">
+        <div class="totals-grid">
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:2px 0 4px">Footings</div>
+          <div class="total-item"><span class="total-item-label">Strip footings</span><span class="total-item-val"><span id="s-strip">0.000</span> m³</span></div>
+          <div class="total-item"><span class="total-item-label">Pad footings</span><span class="total-item-val"><span id="s-pads">0.000</span> m³</span></div>
+          <div class="total-item pile"><span class="total-item-label">Pile caps</span><span class="total-item-val"><span id="s-pile-cap">0.000</span> m³</span></div>
+          <div class="total-grand" style="background:#2471a3">
+            <div><div class="total-grand-label">Footings total</div><div class="total-grand-sub">incl. waste</div></div>
+            <div><span class="total-grand-val" id="s-footings-total">0.000</span><span class="total-grand-unit">m³</span></div>
+          </div>
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:12px 0 4px">Walls</div>
+          <div class="total-item pile"><span class="total-item-label">Pile shafts</span><span class="total-item-val"><span id="s-pile-shaft">0.000</span> m³</span></div>
+          <div class="total-item"><span class="total-item-label">Foundation walls</span><span class="total-item-val"><span id="s-walls">0.000</span> m³</span></div>
+          <div class="total-grand" style="background:#1a5276">
+            <div><div class="total-grand-label">Walls total</div><div class="total-grand-sub">incl. waste</div></div>
+            <div><span class="total-grand-val" id="s-walls-total">0.000</span><span class="total-grand-unit">m³</span></div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+            <div class="total-item"><span class="total-item-label">Slabs</span><span class="total-item-val"><span id="s-slabs">0</span> ft²</span></div>
+            <div class="total-item" style="margin-top:8px;background:#edf7f2;border-color:#a8dfc0">
+              <span class="total-item-label" style="color:#1a7a4a">Dampproofing</span>
+              <span class="total-item-val" style="color:#1a7a4a"><span id="s-damp">0</span> ft²</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Global Presets</span></div>
+      <div class="card-body">
+        <div class="preset-row"><span class="preset-label">Default wall height</span><div class="preset-input-wrap"><input type="number" id="p-wh" value="9" step="0.25" oninput="recalcAll()"><span class="preset-unit">ft</span></div></div>
+        <div class="preset-row"><span class="preset-label">Waste / over-pour</span><div class="preset-input-wrap"><input type="number" id="p-waste" value="10" min="0" max="30" oninput="recalcAll()"><span class="preset-unit">%</span></div></div>
+        <div style="margin-top:12px"><span class="spec-badge">3,000 PSI @ 28 days</span></div>
+      </div>
+    </div>
+    <div class="flag-amber">⚠ Pile shaft uses cylinder formula: π × r² × h. Verify pile dimensions in Catalogue before ordering.</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ FRAMING ═══════════ -->
+<div class="trade-panel" id="tab-framing">
+<div class="workspace">
+  <div class="inputs-col">
+
+    <!-- BASEMENT WALLS (no sheathing) -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Basement Walls</span>
+        <span class="card-subtitle">2×4 / 2×6 SPF · no wall sheathing</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <select id="cs-bsmt" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="16" selected>16″ o.c.</option><option value="24">24″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">Floor ht</span>
+          <input type="number" id="flht-bsmt" value="9" step="0.25" min="1" max="20"
+            style="width:54px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text);text-align:right"
+            onblur="recalcFraming();markDirty()" oninput="recalcFraming()">
+          <span style="font-size:11px;color:var(--text-muted)">ft</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 34px;gap:6px">
+          <span class="col-label">Location</span>
+          <span class="col-label" style="text-align:right">LF</span>
+          <span class="col-label" style="text-align:center;font-size:9px">Spacing</span>
+          <span class="col-label" style="text-align:right">Opens</span>
+          <span class="col-label" style="text-align:right">Studs</span>
+          <span class="col-label" style="text-align:right">Plates (LF)</span>
+          <span></span>
+        </div>
+        <div id="framing-bsmt"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('bsmt')">+ Add basement wall run</button>
+      </div>
+    </div>
+
+    <!-- MAIN FLOOR WALLS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Main Floor — Walls</span>
+        <span class="card-subtitle">Ext / Int</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">Floor ht</span>
+          <input type="number" id="flht-mf" value="9" step="0.25" min="1" max="20"
+            style="width:54px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text);text-align:right"
+            onblur="recalcFraming();markDirty()" oninput="recalcFraming()">
+          <span style="font-size:11px;color:var(--text-muted)">ft</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Exterior</span>
+          <select id="cs-mf-ext" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="24">24″ o.c.</option><option value="16">16″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×6 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 54px 60px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span class="col-label" style="text-align:right">Shth sh.</span><span class="col-label" style="text-align:right">Blocking</span><span></span>
+        </div>
+        <div id="framing-mf-ext"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('mf-ext')">+ Add ext wall run</button>
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Interior</span>
+          <select id="cs-mf-int" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="16" selected>16″ o.c.</option><option value="24">24″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×4 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span></span>
+        </div>
+        <div id="framing-mf-int"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('mf-int')">+ Add int wall run</button>
+      </div>
+    </div>
+
+    <!-- MAIN FLOOR SHEATHING -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Main Floor — Floor Sheathing</span>
+        <span class="card-subtitle">3/4″ T&G OSB · area ÷ 32 per sheet</span>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 110px 80px 34px;gap:8px">
+          <span class="col-label">Location / description</span>
+          <span class="col-label" style="text-align:right">Area (ft²)</span>
+          <span class="col-label" style="text-align:right">Sheets</span>
+          <span></span>
+        </div>
+        <div id="framing-mf-floor"></div>
+        <button class="add-row-btn" onclick="addFloorSheathRow('mf')">+ Add area</button>
+      </div>
+    </div>
+
+    <!-- SECOND FLOOR WALLS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Second Floor — Walls</span>
+        <span class="card-subtitle">Ext / Int</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">Floor ht</span>
+          <input type="number" id="flht-sf" value="9" step="0.25" min="1" max="20"
+            style="width:54px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text);text-align:right"
+            onblur="recalcFraming();markDirty()" oninput="recalcFraming()">
+          <span style="font-size:11px;color:var(--text-muted)">ft</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Exterior</span>
+          <select id="cs-sf-ext" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="24">24″ o.c.</option><option value="16">16″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×6 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 54px 60px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span class="col-label" style="text-align:right">Shth sh.</span><span class="col-label" style="text-align:right">Blocking</span><span></span>
+        </div>
+        <div id="framing-sf-ext"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('sf-ext')">+ Add ext wall run</button>
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Interior</span>
+          <select id="cs-sf-int" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="16" selected>16″ o.c.</option><option value="24">24″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×4 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span></span>
+        </div>
+        <div id="framing-sf-int"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('sf-int')">+ Add int wall run</button>
+      </div>
+    </div>
+
+    <!-- SECOND FLOOR SHEATHING -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Second Floor — Floor Sheathing</span>
+        <span class="card-subtitle">3/4″ T&G OSB · area ÷ 32 per sheet</span>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 110px 80px 34px;gap:8px">
+          <span class="col-label">Location / description</span>
+          <span class="col-label" style="text-align:right">Area (ft²)</span>
+          <span class="col-label" style="text-align:right">Sheets</span>
+          <span></span>
+        </div>
+        <div id="framing-sf-floor"></div>
+        <button class="add-row-btn" onclick="addFloorSheathRow('sf')">+ Add area</button>
+      </div>
+    </div>
+
+    <!-- THIRD FLOOR WALLS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Third Floor — Walls</span>
+        <span class="card-subtitle">Ext / Int</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">Floor ht</span>
+          <input type="number" id="flht-tf" value="9" step="0.25" min="1" max="20"
+            style="width:54px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text);text-align:right"
+            onblur="recalcFraming();markDirty()" oninput="recalcFraming()">
+          <span style="font-size:11px;color:var(--text-muted)">ft</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Exterior</span>
+          <select id="cs-tf-ext" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="24">24″ o.c.</option><option value="16">16″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×6 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 54px 60px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span class="col-label" style="text-align:right">Shth sh.</span><span class="col-label" style="text-align:right">Blocking</span><span></span>
+        </div>
+        <div id="framing-tf-ext"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('tf-ext')">+ Add ext wall run</button>
+        <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Interior</span>
+          <select id="cs-tf-int" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="16" selected>16″ o.c.</option><option value="24">24″ o.c.</option><option value="12">12″ o.c.</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted)">2×4 SPF</span>
+        </div>
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 70px 52px 60px 54px 54px 34px;gap:6px">
+          <span class="col-label">Location</span><span class="col-label" style="text-align:right">LF</span><span class="col-label" style="text-align:center;font-size:9px">Spacing</span><span class="col-label" style="text-align:right">Opens</span><span class="col-label" style="text-align:right">Studs</span><span class="col-label" style="text-align:right">Plates LF</span><span></span>
+        </div>
+        <div id="framing-tf-int"></div>
+        <button class="add-row-btn" onclick="addFramingWallRow('tf-int')">+ Add int wall run</button>
+      </div>
+    </div>
+
+    <!-- THIRD FLOOR SHEATHING -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Third Floor — Floor Sheathing</span>
+        <span class="card-subtitle">3/4″ T&G OSB · area ÷ 32 per sheet</span>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 110px 80px 34px;gap:8px">
+          <span class="col-label">Location / description</span>
+          <span class="col-label" style="text-align:right">Area (ft²)</span>
+          <span class="col-label" style="text-align:right">Sheets</span>
+          <span></span>
+        </div>
+        <div id="framing-tf-floor"></div>
+        <button class="add-row-btn" onclick="addFloorSheathRow('tf')">+ Add area</button>
+      </div>
+    </div>
+
+    <!-- HEADERS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Headers</span>
+        <span class="card-subtitle">2× members — size auto-selected by opening width · Canadian NBC spans</span>
+      </div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 80px 60px 100px 60px 34px;gap:6px">
+          <span class="col-label">Location / description</span>
+          <span class="col-label" style="text-align:right">Opening (ft)</span>
+          <span class="col-label" style="text-align:right">Qty</span>
+          <span class="col-label" style="text-align:center">Member size</span>
+          <span class="col-label" style="text-align:right">Pcs needed</span>
+          <span></span>
+        </div>
+        <div id="framing-headers"></div>
+        <button class="add-row-btn" onclick="addHeaderRow()">+ Add header</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Framing Summary</span></div>
+      <div class="card-body">
+        <div class="totals-grid">
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:2px 0 4px">Basement walls</div>
+          <div class="total-item"><span class="total-item-label">Studs</span><span class="total-item-val"><span id="fb-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Plates</span><span class="total-item-val"><span id="fb-plates">0</span> LF</span></div>
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:10px 0 4px">Main floor</div>
+          <div class="total-item"><span class="total-item-label">Ext. studs</span><span class="total-item-val"><span id="fmfe-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Ext. plates</span><span class="total-item-val"><span id="fmfe-plates">0</span> LF</span></div>
+          <div class="total-item"><span class="total-item-label">Wall sheathing</span><span class="total-item-val"><span id="fmfe-sheath">0</span> sh</span></div>
+          <div class="total-item"><span class="total-item-label">Int. studs</span><span class="total-item-val"><span id="fmfi-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Int. plates</span><span class="total-item-val"><span id="fmfi-plates">0</span> LF</span></div>
+          <div class="total-item" style="background:#edf7f2;border-color:#a8dfc0"><span class="total-item-label" style="color:#1a7a4a">Floor sheathing</span><span class="total-item-val" style="color:#1a7a4a"><span id="fmf-floor">0</span> sh</span></div>
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:10px 0 4px">Second floor</div>
+          <div class="total-item"><span class="total-item-label">Ext. studs</span><span class="total-item-val"><span id="fsfe-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Ext. plates</span><span class="total-item-val"><span id="fsfe-plates">0</span> LF</span></div>
+          <div class="total-item"><span class="total-item-label">Wall sheathing</span><span class="total-item-val"><span id="fsfe-sheath">0</span> sh</span></div>
+          <div class="total-item"><span class="total-item-label">Int. studs</span><span class="total-item-val"><span id="fsfi-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Int. plates</span><span class="total-item-val"><span id="fsfi-plates">0</span> LF</span></div>
+          <div class="total-item" style="background:#edf7f2;border-color:#a8dfc0"><span class="total-item-label" style="color:#1a7a4a">Floor sheathing</span><span class="total-item-val" style="color:#1a7a4a"><span id="fsf-floor">0</span> sh</span></div>
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:10px 0 4px">Third floor</div>
+          <div class="total-item"><span class="total-item-label">Ext. studs</span><span class="total-item-val"><span id="ftfe-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Ext. plates</span><span class="total-item-val"><span id="ftfe-plates">0</span> LF</span></div>
+          <div class="total-item"><span class="total-item-label">Wall sheathing</span><span class="total-item-val"><span id="ftfe-sheath">0</span> sh</span></div>
+          <div class="total-item"><span class="total-item-label">Int. studs</span><span class="total-item-val"><span id="ftfi-studs">0</span> pcs</span></div>
+          <div class="total-item"><span class="total-item-label">Int. plates</span><span class="total-item-val"><span id="ftfi-plates">0</span> LF</span></div>
+          <div class="total-item" style="background:#edf7f2;border-color:#a8dfc0"><span class="total-item-label" style="color:#1a7a4a">Floor sheathing</span><span class="total-item-val" style="color:#1a7a4a"><span id="ftf-floor">0</span> sh</span></div>
+
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:10px 0 4px">Headers</div>
+          <div class="total-item"><span class="total-item-label">Total header pcs</span><span class="total-item-val"><span id="fh-total">0</span> pcs</span></div>
+
+          <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+            <div class="total-grand">
+              <div><div class="total-grand-label">Total studs</div><div class="total-grand-sub">all floors, incl. waste</div></div>
+              <div><span class="total-grand-val" id="f-total-studs">0</span><span class="total-grand-unit">pcs</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LUMBER PRICING -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Lumber Pricing</span><span class="card-subtitle">Okotoks HH · Apr 2026</span></div>
+      <div class="card-body">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:8px">Unit prices ($/pc or $/sheet) — editable</div>
+
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin:6px 0 4px">Studs</div>
+        <div class="preset-row"><span class="preset-label">2×4 stud 92-5/8″</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-stud-24-92" value="2.90" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×4 stud 104-5/8″</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-stud-24-104" value="3.75" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×6 stud 92-5/8″</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-stud-26-92" value="4.28" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×6 stud 104-5/8″</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-stud-26-104" value="5.76" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Plate stock (16′ lengths)</div>
+        <div class="preset-row"><span class="preset-label">2×4 plate 16′</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-plate-24" value="8.43" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×6 plate 16′</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-plate-26" value="12.16" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Sheathing</div>
+        <div class="preset-row"><span class="preset-label">Wall sheathing 7/16″ OSB</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-wall-sheath" value="11.98" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/sh</span></div></div>
+        <div class="preset-row"><span class="preset-label">Floor sheathing 23/32″ T&G</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-floor-sheath" value="21.78" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/sh</span></div></div>
+
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">Headers (per 12′ piece)</div>
+        <div class="preset-row"><span class="preset-label">2×8-12′</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-hdr-2x8" value="10.88" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×10-12′</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-hdr-2x10" value="16.60" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">2×12-12′</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-hdr-2x12" value="24.36" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/pc</span></div></div>
+        <div class="preset-row"><span class="preset-label">LVL 1-3/4″×5-1/2″</span><div class="preset-input-wrap"><span class="preset-unit">$</span><input type="number" id="lp-lvl" value="6.38" step="0.01" onblur="recalcFraming();markDirty()"><span class="preset-unit">/ft</span></div></div>
+
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Stud length used for pricing</div>
+          <div class="preset-row"><span class="preset-label">Ext. walls (2×6)</span>
+            <select id="lp-stud-26-len" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+              <option value="92">92-5/8″ (8′)</option>
+              <option value="104">104-5/8″ (9′)</option>
+            </select>
+          </div>
+          <div class="preset-row"><span class="preset-label">Int. walls (2×4)</span>
+            <select id="lp-stud-24-len" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+              <option value="92">92-5/8″ (8′)</option>
+              <option value="104">104-5/8″ (9′)</option>
+            </select>
+          </div>
+          <div class="preset-row"><span class="preset-label">Basement (2×4)</span>
+            <select id="lp-stud-bsmt-len" onchange="recalcFraming();markDirty()" style="font-family:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+              <option value="92">92-5/8″ (8′)</option>
+              <option value="104">104-5/8″ (9′)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LUMBER BUDGET TOTAL -->
+    <div class="card" style="border:2px solid var(--navy)">
+      <div class="card-header" style="background:var(--navy)">
+        <span class="card-title" style="color:#fff">Lumber Budget</span>
+        <span class="card-subtitle" style="color:rgba(255,255,255,.6)">framing materials only</span>
+      </div>
+      <div class="card-body">
+        <div class="totals-grid">
+          <div class="total-item"><span class="total-item-label">2×6 ext. studs</span><span class="total-item-val">$<span id="lc-stud-26">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">2×4 int. studs</span><span class="total-item-val">$<span id="lc-stud-24-int">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">2×4 bsmt. studs</span><span class="total-item-val">$<span id="lc-stud-24-bsmt">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">2×6 plate stock</span><span class="total-item-val">$<span id="lc-plate-26">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">2×4 plate stock</span><span class="total-item-val">$<span id="lc-plate-24">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">Wall sheathing</span><span class="total-item-val">$<span id="lc-wall-sheath">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">Floor sheathing</span><span class="total-item-val">$<span id="lc-floor-sheath">0.00</span></span></div>
+          <div class="total-item"><span class="total-item-label">Headers</span><span class="total-item-val">$<span id="lc-headers">0.00</span></span></div>
+          <div class="total-grand" style="margin-top:8px">
+            <div><div class="total-grand-label">Total lumber budget</div><div class="total-grand-sub">materials only · before tax</div></div>
+            <div><span class="total-grand-val" id="lc-total" style="font-size:22px">$0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Framing Presets</span></div>
+      <div class="card-body">
+        <div class="preset-row"><span class="preset-label">Default ext. spacing</span><div class="preset-input-wrap"><input type="number" id="pf-ext" value="16" onblur="recalcFraming();markDirty()"><span class="preset-unit">in</span></div></div>
+        <div class="preset-row"><span class="preset-label">Default int. spacing</span><div class="preset-input-wrap"><input type="number" id="pf-int" value="16" onblur="recalcFraming();markDirty()"><span class="preset-unit">in</span></div></div>
+        <div class="preset-row"><span class="preset-label">Default wall ht</span><div class="preset-input-wrap"><input type="number" id="pf-ht" value="9" step="0.25" onblur="recalcFraming();markDirty()"><span class="preset-unit">ft</span></div></div>
+        <div class="preset-row"><span class="preset-label">Stud waste</span><div class="preset-input-wrap"><input type="number" id="pf-stud-waste" value="15" onblur="recalcFraming();markDirty()"><span class="preset-unit">%</span></div></div>
+        <div class="preset-row"><span class="preset-label">Plate waste</span><div class="preset-input-wrap"><input type="number" id="pf-plate-waste" value="10" onblur="recalcFraming();markDirty()"><span class="preset-unit">%</span></div></div>
+        <div class="preset-row"><span class="preset-label">Wall sheath waste</span><div class="preset-input-wrap"><input type="number" id="pf-sheath-waste" value="10" onblur="recalcFraming();markDirty()"><span class="preset-unit">%</span></div></div>
+        <div class="preset-row"><span class="preset-label">Floor sheath waste</span><div class="preset-input-wrap"><input type="number" id="pf-floor-waste" value="10" onblur="recalcFraming();markDirty()"><span class="preset-unit">%</span></div></div>
+        <div style="margin-top:10px"><span class="spec-badge">SPF · NBC 2020-AE</span></div>
+      </div>
+    </div>
+
+    <div class="flag-amber">⚠ Stud spacing: per-row override → card dropdown → global preset. Stud formula: 12/spacing studs per LF + opening adjustments. Plates: LF × 3. Wall sheathing: area ÷ 32. Floor sheathing: area ÷ 32 (3/4″ T&G OSB). Plate cost: LF ÷ 16 × price/16′ piece.</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ WINDOWS ═══════════ -->
+<div class="trade-panel" id="tab-windows">
+<div class="workspace">
+  <div class="inputs-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Windows</span><span class="card-subtitle">triple glazed vinyl — NAFS DP1200</span></div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 90px 90px 60px 34px;gap:8px">
+          <span class="col-label">Description / location</span><span class="col-label" style="text-align:right">Width (in)</span><span class="col-label" style="text-align:right">Height (in)</span><span class="col-label" style="text-align:right">Qty</span><span></span>
+        </div>
+        <div id="win-rows"></div>
+        <button class="add-row-btn" onclick="addWinRow('win')">+ Add window type</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Doors</span></div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 90px 90px 60px 34px;gap:8px">
+          <span class="col-label">Description / location</span><span class="col-label" style="text-align:right">Width (in)</span><span class="col-label" style="text-align:right">Height (in)</span><span class="col-label" style="text-align:right">Qty</span><span></span>
+        </div>
+        <div id="door-rows"></div>
+        <button class="add-row-btn" onclick="addWinRow('door')">+ Add door type</button>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Window &amp; Door Count</span></div>
+      <div class="card-body">
+        <div class="totals-grid">
+          <div class="total-item"><span class="total-item-label">Total windows</span><span class="total-item-val"><span id="w-win">0</span> units</span></div>
+          <div class="total-item"><span class="total-item-label">Total doors</span><span class="total-item-val"><span id="w-door">0</span> units</span></div>
+          <div class="total-item"><span class="total-item-label">Total R.O. area</span><span class="total-item-val"><span id="w-area">0</span> ft²</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="flag-amber">⚠ Confirm R.O. dims with supplier before framing. NAFS DP1200 / PG25 per spec.</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ DRYWALL ═══════════ -->
+<div class="trade-panel" id="tab-drywall">
+<div class="workspace">
+  <div class="inputs-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Drywall Areas</span><span class="card-subtitle">sheets auto-calculated</span></div>
+      <div class="card-body">
+        <div class="col-heads" style="display:grid;grid-template-columns:1fr 110px 90px 80px 34px;gap:8px">
+          <span class="col-label">Location / type</span><span class="col-label" style="text-align:right">Area (ft²)</span><span class="col-label">Sheet size</span><span class="col-label" style="text-align:right">Sheets</span><span></span>
+        </div>
+        <div id="dw-rows"></div>
+        <button class="add-row-btn" onclick="addDwRow()">+ Add area</button>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Drywall Summary</span></div>
+      <div class="card-body">
+        <div class="totals-grid">
+          <div class="total-item"><span class="total-item-label">Total area</span><span class="total-item-val"><span id="d-area">0</span> ft²</span></div>
+          <div class="total-grand"><div class="total-grand-label">Total sheets</div><div><span class="total-grand-val" id="d-sheets">0</span><span class="total-grand-unit">sheets</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Drywall Presets</span></div>
+      <div class="card-body">
+        <div class="preset-row"><span class="preset-label">Waste factor</span><div class="preset-input-wrap"><input type="number" id="pd-waste" value="12" oninput="recalcDrywall()"><span class="preset-unit">%</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ NOTES ═══════════ -->
+<div class="trade-panel" id="tab-notes">
+<div class="workspace">
+  <div class="inputs-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Project Notes</span></div>
+      <div class="card-body"><textarea class="notes-area" id="notes-general" rows="8" placeholder="General notes, assumptions, items to verify…" oninput="markDirty()"></textarea></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Flags &amp; Open Items</span></div>
+      <div class="card-body"><textarea class="notes-area" id="notes-flags" rows="5" placeholder="Items pending engineer confirmation, open questions…" oninput="markDirty()"></textarea></div>
+    </div>
+  </div>
+  <div class="sidebar-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Project Info</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+        <div><div class="section-h">Address</div><input type="text" id="pi-address" style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--bg);color:var(--text)" placeholder="Site address" oninput="markDirty()"></div>
+        <div><div class="section-h">Community</div><input type="text" id="pi-community" style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--bg);color:var(--text)" placeholder="Community / subdivision" oninput="markDirty()"></div>
+        <div><div class="section-h">Date</div><input type="date" id="pi-date" style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--bg);color:var(--text)" oninput="markDirty()"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════ CATALOGUE SETTINGS MODAL ═══════════ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Footing, Wall &amp; Pile Catalogue</h3>
+      <button class="modal-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-section">
+        <div class="modal-section-title"><span>Strip footing types</span><button class="cat-add-btn" onclick="addCatRow('strips')">+ Add</button></div>
+        <table class="cat-table">
+          <thead><tr><th>Code / name</th><th style="text-align:right">Width (in)</th><th style="text-align:right">Depth (in)</th><th style="width:32px"></th></tr></thead>
+          <tbody id="cat-strips"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title"><span>Pad footing types</span><button class="cat-add-btn" onclick="addCatRow('pads')">+ Add</button></div>
+        <table class="cat-table">
+          <thead><tr><th>Code / name</th><th style="text-align:right">L (in)</th><th style="text-align:right">W (in)</th><th style="text-align:right">D (in)</th><th style="width:32px"></th></tr></thead>
+          <tbody id="cat-pads"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title"><span>Concrete pile types</span><button class="cat-add-btn" onclick="addCatRow('piles')">+ Add</button></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-family:'DM Mono',monospace">Cap = rectangular pad (L×W×D). Shaft = cylinder (diameter × height). Both inputs in inches/feet.</div>
+        <table class="cat-table">
+          <thead><tr><th>Code / name</th><th style="text-align:right">Cap L (in)</th><th style="text-align:right">Cap W (in)</th><th style="text-align:right">Cap D (in)</th><th style="text-align:right">Shaft dia (in)</th><th style="text-align:right">Shaft ht (ft)</th><th style="width:32px"></th></tr></thead>
+          <tbody id="cat-piles"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title"><span>Foundation wall types</span><button class="cat-add-btn" onclick="addCatRow('walls')">+ Add</button></div>
+        <table class="cat-table">
+          <thead><tr><th>Code / name</th><th style="text-align:right">Thickness (in)</th><th style="text-align:right">Default height (ft)</th><th style="width:32px"></th></tr></thead>
+          <tbody id="cat-walls"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-section" style="margin-bottom:0">
+        <div class="modal-section-title">
+          <span>Slab types <span style="font-size:11px;font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0">(thickness for reference — output is ft²)</span></span>
+          <button class="cat-add-btn" onclick="addCatRow('slabs')">+ Add</button>
+        </div>
+        <table class="cat-table">
+          <thead><tr><th>Code / name</th><th style="text-align:right">Thickness (in) — ref</th><th style="width:32px"></th></tr></thead>
+          <tbody id="cat-slabs"></tbody>
+        </table>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-left">
+        <button class="btn-outline" onclick="exportCatalogue()">⬇ Export catalogue.json</button>
+        <button class="btn-outline" onclick="document.getElementById('cat-import').click()">⬆ Import catalogue</button>
+        <input type="file" id="cat-import" accept=".json" style="display:none" onchange="importCatalogue(this)">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+        <button class="btn-save" onclick="saveSettings()">Save catalogue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PROJECTS MODAL ═══════════ -->
+<div class="proj-modal" id="proj-modal">
+  <div class="proj-modal-inner">
+    <div class="modal-header">
+      <h3>Saved projects</h3>
+      <button class="modal-close" onclick="closeProjects()">×</button>
+    </div>
+    <div class="proj-list" id="proj-list"></div>
+    <div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-outline" onclick="duplicateProject(currentProjId);closeProjects()" title="Create a copy of the current project">⧉ Duplicate current</button>
+      <button class="btn-outline" onclick="newProject();closeProjects()">+ New blank</button>
+      <button class="btn-cancel" onclick="closeProjects()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ OPENINGS MODAL ═══════════ -->
+<div class="modal-overlay" id="opens-modal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <h3 id="opens-modal-title">Wall Openings</h3>
+      <button class="modal-close" onclick="closeOpensModal()">×</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <div style="display:grid;grid-template-columns:1fr 50px 80px 80px 34px;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:6px">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)">Label</span>
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);text-align:right">Qty</span>
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);text-align:right">Width (ft)</span>
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);text-align:right">Height (ft)</span>
+        <span></span>
+      </div>
+      <div id="opens-list"></div>
+      <button class="add-row-btn" style="margin-top:10px" onclick="addOpening()">+ Add opening</button>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">
+        Openings ≤5′ wide add 2 studs each. Openings >5′ add 1 stud. Height is used for sheathing deduction.
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end">
+      <button class="btn-save" onclick="closeOpensModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ EXPORT MODAL ═══════════ -->
+<div class="export-modal" id="export-modal">
+  <div class="export-inner">
+    <h3>Export takeoff summary</h3>
+    <p>Opens a print-ready summary. Use Print → Save as PDF (Ctrl+P / Cmd+P).</p>
+    <div class="export-preview" id="export-preview"></div>
+    <div class="export-btns">
+      <button class="btn-cancel" onclick="closeExport()">Cancel</button>
+      <button class="btn-export" onclick="doPrint()">Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DEFAULT CATALOGUE
+// ═══════════════════════════════════════════
+const HARDCODED_CATALOGUE = {
+  strips: [
+    {code:'SF1', w:18, d:8},
+    {code:'SF2', w:28, d:8},
+    {code:'SF3', w:24, d:10},
+  ],
+  pads: [
+    {code:'F1', l:24, w:24, d:10},
+    {code:'F2', l:30, w:30, d:12},
+    {code:'F3', l:36, w:36, d:12},
+  ],
+  piles: [
+    {code:'P1', capL:24, capW:24, capD:10, shaftDia:12, shaftHt:6},
+    {code:'P2', capL:30, capW:30, capD:12, shaftDia:16, shaftHt:6},
+  ],
+  walls: [
+    {code:'W-8"',  thick:8,  defH:9},
+    {code:'W-10"', thick:10, defH:9},
+    {code:'W-12"', thick:12, defH:9},
+  ],
+  slabs: [
+    {code:'S-3"', thick:3},
+    {code:'S-4"', thick:4},
+    {code:'S-6"', thick:6},
+  ],
+};
+// DEFAULT_CATALOGUE starts as hardcoded, overwritten by catalogue.json on load
+let DEFAULT_CATALOGUE = JSON.parse(JSON.stringify(HARDCODED_CATALOGUE));
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let cat = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+let catalogue = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+
+function blankRows() {
+  return {
+    strips:[], pads:[], piles:[], walls:[], slabs:[], damp:[],
+    framingBsmt:[],
+    framingMfExt:[], framingMfInt:[], framingFloorMF:[],
+    framingStExt:[], framingStInt:[], framingFloorSF:[],
+    framingTfExt:[], framingTfInt:[], framingFloorTF:[],
+    framingHeaders:[],
+    windows:[], doors:[], drywall:[],
+  };
+}
+
+// ═══════════════════════════════════════════
+// MULTI-PROJECT MANAGEMENT
+// ═══════════════════════════════════════════
+let projects = [];      // array of {id, name, date, data}
+let currentProjId = null;
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function getProjects() {
+  try { return JSON.parse(localStorage.getItem('pdg-projects') || '[]'); } catch(e) { return []; }
+}
+function saveProjects(arr) {
+  localStorage.setItem('pdg-projects', JSON.stringify(arr));
+}
+function getCurrentData() {
+  return {
+    name: document.getElementById('project-name').value,
+    piAddress: document.getElementById('pi-address')?.value||'',
+    piCommunity: document.getElementById('pi-community')?.value||'',
+    piDate: document.getElementById('pi-date')?.value||'',
+    notes: document.getElementById('notes-general')?.value||'',
+    flags: document.getElementById('notes-flags')?.value||'',
+    presets: {
+      wh: pv('p-wh'), waste: pv('p-waste'),
+      pfExt: pv('pf-ext'), pfInt: pv('pf-int'),
+      pfHt: pv('pf-ht'), pfStudWaste: pv('pf-stud-waste'),
+      pfPlateWaste: pv('pf-plate-waste'), pfSheathWaste: pv('pf-sheath-waste'),
+      pfFloorWaste: pv('pf-floor-waste'),
+      csBsmt: document.getElementById('cs-bsmt')?.value||'16',
+      csMfExt: document.getElementById('cs-mf-ext')?.value||'24',
+      csMfInt: document.getElementById('cs-mf-int')?.value||'16',
+      csSfExt: document.getElementById('cs-sf-ext')?.value||'24',
+      csSfInt: document.getElementById('cs-sf-int')?.value||'16',
+      csTfExt: document.getElementById('cs-tf-ext')?.value||'24',
+      csTfInt: document.getElementById('cs-tf-int')?.value||'16',
+      pdWaste: pv('pd-waste'),
+      flhtBsmt: pv('flht-bsmt'), flhtMf: pv('flht-mf'),
+      flhtSf: pv('flht-sf'), flhtTf: pv('flht-tf'),
+      // Lumber pricing
+      lpStud2492: pv('lp-stud-24-92'), lpStud24104: pv('lp-stud-24-104'),
+      lpStud2692: pv('lp-stud-26-92'), lpStud26104: pv('lp-stud-26-104'),
+      lpPlate24: pv('lp-plate-24'), lpPlate26: pv('lp-plate-26'),
+      lpWallSheath: pv('lp-wall-sheath'), lpFloorSheath: pv('lp-floor-sheath'),
+      lpHdr2x8: pv('lp-hdr-2x8'), lpHdr2x10: pv('lp-hdr-2x10'),
+      lpHdr2x12: pv('lp-hdr-2x12'), lpLvl: pv('lp-lvl'),
+      lpStud26Len: document.getElementById('lp-stud-26-len')?.value||'92',
+      lpStud24Len: document.getElementById('lp-stud-24-len')?.value||'92',
+      lpStudBsmtLen: document.getElementById('lp-stud-bsmt-len')?.value||'92',
+    },
+    catalogue,
+    rows: window._rows,
+  };
+}
+function persistCurrentProject() {
+  if (!currentProjId) return;
+  const projs = getProjects();
+  const idx = projs.findIndex(p => p.id === currentProjId);
+  const data = getCurrentData();
+  if (idx >= 0) {
+    projs[idx].name = data.name || 'Unnamed';
+    projs[idx].date = new Date().toISOString();
+    projs[idx].data = data;
+  }
+  saveProjects(projs);
+}
+function updateCurrentProjectName(val) {
+  const projs = getProjects();
+  const idx = projs.findIndex(p => p.id === currentProjId);
+  if (idx >= 0) { projs[idx].name = val || 'Unnamed'; saveProjects(projs); }
+  renderProjBar();
+}
+function newProject(copyFromId) {
+  persistCurrentProject();
+  const id = genId();
+  let data = null;
+  let name = 'New Project';
+  if (copyFromId) {
+    const projs = getProjects();
+    const src = projs.find(p => p.id === copyFromId);
+    if (src && src.data) {
+      data = JSON.parse(JSON.stringify(src.data)); // deep clone
+      name = (src.name || 'Unnamed') + ' — Copy';
+      data.name = name;
+    }
+  }
+  const proj = { id, name, date: new Date().toISOString(), data };
+  const projs = getProjects();
+  projs.push(proj);
+  saveProjects(projs);
+  currentProjId = id;
+  if (data) {
+    applySnap(data);
+  } else {
+    loadBlankProject();
+  }
+  renderProjBar();
+}
+function loadProjectById(id) {
+  persistCurrentProject();
+  const projs = getProjects();
+  const proj = projs.find(p => p.id === id);
+  if (!proj) return;
+  currentProjId = id;
+  if (proj.data) {
+    applySnap(proj.data);
+  } else {
+    loadBlankProject();
+    document.getElementById('project-name').value = proj.name || '';
+  }
+  renderProjBar();
+}
+function deleteProject(id) {
+  if (!confirm('Delete this project? This cannot be undone.')) return;
+  let projs = getProjects().filter(p => p.id !== id);
+  saveProjects(projs);
+  if (currentProjId === id) {
+    if (projs.length > 0) {
+      // Load without persisting first — the deleted project is already gone
+      const last = projs[projs.length - 1];
+      currentProjId = last.id;
+      if (last.data) { applySnap(last.data); } else { loadBlankProject(); document.getElementById('project-name').value = last.name || ''; }
+    } else {
+      const newId = genId();
+      const newProj = { id: newId, name: 'New Project', date: new Date().toISOString(), data: null };
+      saveProjects([newProj]);
+      currentProjId = newId;
+      loadBlankProject();
+    }
+  }
+  renderProjBar();
+  renderProjList();
+}
+function duplicateProject(id) {
+  newProject(id);
+  renderProjList();
+}
+function loadBlankProject() {
+  window._rows = blankRows();
+  document.getElementById('project-name').value = '';
+  document.getElementById('pi-address').value = '';
+  document.getElementById('pi-community').value = '';
+  document.getElementById('pi-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('notes-general').value = '';
+  document.getElementById('notes-flags').value = '';
+  // Clear all framing wall sections
+  ['bsmt','mf-ext','mf-int','sf-ext','sf-int','tf-ext','tf-int'].forEach(t => {
+    const el = document.getElementById('framing-' + t); if(el) el.innerHTML = '';
+  });
+  // Clear floor sheathing sections
+  ['mf','sf','tf'].forEach(f => {
+    const el = document.getElementById('framing-' + f + '-floor'); if(el) el.innerHTML = '';
+  });
+  const fh = document.getElementById('framing-headers'); if(fh) fh.innerHTML = '';
+  document.getElementById('win-rows').innerHTML = '';
+  document.getElementById('door-rows').innerHTML = '';
+  document.getElementById('dw-rows').innerHTML = '';
+  recalcAll();
+}
+function renderProjBar() {
+  const bar = document.getElementById('proj-bar');
+  const projs = getProjects();
+  bar.innerHTML = '';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'proj-tab-add';
+  addBtn.title = 'New project';
+  addBtn.textContent = '＋';
+  addBtn.onclick = () => newProject();
+  bar.appendChild(addBtn);
+  projs.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'proj-tab' + (p.id === currentProjId ? ' active' : '');
+    btn.textContent = p.name || 'Unnamed';
+    btn.onclick = () => loadProjectById(p.id);
+    bar.appendChild(btn);
+  });
+}
+function renderProjList() {
+  const projs = getProjects();
+  const list = document.getElementById('proj-list');
+  list.innerHTML = '';
+  if (projs.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No saved projects</div>';
+    return;
+  }
+  [...projs].reverse().forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'proj-list-item' + (p.id === currentProjId ? ' active-proj' : '');
+    const d = new Date(p.date).toLocaleDateString('en-CA');
+    item.innerHTML = `
+      <div onclick="loadProjectById('${p.id}');closeProjects()">
+        <div class="proj-list-name">${p.name||'Unnamed'}</div>
+        <div class="proj-list-date">${d}</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        <button class="proj-action-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="Duplicate project">⧉</button>
+        <button class="proj-del" onclick="event.stopPropagation();deleteProject('${p.id}')" title="Delete project">🗑</button>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function openProjects() { renderProjList(); document.getElementById('proj-modal').classList.add('open'); }
+function closeProjects() { document.getElementById('proj-modal').classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+// UNIT HELPERS
+// ═══════════════════════════════════════════
+const ft3tom3 = v => v / 35.3147;
+const inToFt  = v => v / 12;
+const m3fmt   = v => (Math.round(v * 1000) / 1000).toFixed(3);
+const pv      = id => { const el = document.getElementById(id); return el ? (parseFloat(el.value)||0) : 0; };
+
+// ═══════════════════════════════════════════
+// VOLUME CALCULATIONS
+// ═══════════════════════════════════════════
+function stripVol(row) {
+  const t = catalogue.strips.find(s => s.code === row.typeCode); if (!t) return 0;
+  const lf = row.shared ? row.lf * 0.5 : row.lf;
+  return ft3tom3(lf * inToFt(t.w) * inToFt(t.d));
+}
+function padVol(row) {
+  const t = catalogue.pads.find(p => p.code === row.typeCode); if (!t) return 0;
+  return ft3tom3(inToFt(t.l) * inToFt(t.w) * inToFt(t.d) * row.qty);
+}
+function pileCapVol(row) {
+  const t = catalogue.piles.find(p => p.code === row.typeCode); if (!t) return 0;
+  return ft3tom3(inToFt(t.capL) * inToFt(t.capW) * inToFt(t.capD) * row.qty);
+}
+function pileShaftVol(row) {
+  const t = catalogue.piles.find(p => p.code === row.typeCode); if (!t) return 0;
+  const r = inToFt(t.shaftDia) / 2; // radius in ft
+  return ft3tom3(Math.PI * r * r * t.shaftHt * row.qty);
+}
+function pileTotalVol(row) { return pileCapVol(row) + pileShaftVol(row); }
+function wallVol(row) {
+  const t = catalogue.walls.find(w => w.code === row.typeCode); if (!t) return 0;
+  const ht = row.htOverride > 0 ? row.htOverride : (t.defH || pv('p-wh'));
+  const lf = row.shared ? row.lf * 0.5 : row.lf;
+  return ft3tom3(lf * inToFt(t.thick) * ht);
+}
+function slabArea(row) { return row.area || 0; }
+// Dampproofing: LF × (height − 1.0 ft). Height uses row override or global default wall height.
+function dampArea(row) {
+  const ht = (row.ht > 0 ? row.ht : pv('p-wh')) - 1.0;
+  return ht > 0 ? (row.lf || 0) * ht : 0;
+}
+function deductVol(row) { return ft3tom3(row.vol); }
+
+// ═══════════════════════════════════════════
+// BUILD SELECT
+// ═══════════════════════════════════════════
+function buildSelect(type, selected) {
+  const items = catalogue[type] || [];
+  const opts = items.map(t => {
+    let dim = '';
+    if (type==='strips') dim=`${t.w}"×${t.d}"`;
+    else if (type==='pads') dim=`${t.l}"×${t.w}"×${t.d}"`;
+    else if (type==='piles') dim=`cap ${t.capL}"×${t.capW}"×${t.capD}" | ⌀${t.shaftDia}"×${t.shaftHt}'`;
+    else if (type==='walls') dim=`${t.thick}" thk`;
+    else if (type==='slabs') dim=`${t.thick}" thk`;
+    return `<option value="${t.code}"${t.code===selected?' selected':''}>${t.code} — ${dim}</option>`;
+  }).join('');
+  return `<select style="font-family:inherit;font-size:12px;padding:5px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text);width:100%;cursor:pointer">${opts}</select>`;
+}
+
+// ═══════════════════════════════════════════
+// RENDER ROWS
+// ═══════════════════════════════════════════
+
+// Quantity input — accepts plain numbers or simple formulas (e.g. 49.5+32, 3*18.5)
+// Strips invalid chars on input, evaluates formula on blur, resolves to a number
+const qtyInput = (val, storeAndRecalc) =>
+  `<input type="text" value="${val||''}" placeholder="0" maxlength="30"
+    style="text-align:right;font-family:'DM Mono',monospace;width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;"
+    oninput="this.value=this.value.replace(/[^0-9.+\\-*\\/() ]/g,'');${storeAndRecalc}"
+    onblur="
+      var raw=this.value.trim();
+      if(raw===''){markDirty();return;}
+      try{
+        var result=Function('return ('+raw+')')();
+        if(typeof result==='number'&&isFinite(result)){
+          this.value=parseFloat(result.toFixed(4));
+          ${storeAndRecalc}
+        } else {
+          this.style.borderColor='var(--red)';
+          return;
+        }
+      } catch(e){
+        this.style.borderColor='var(--red)';
+        return;
+      }
+      this.style.borderColor='';
+      markDirty();">`;
+
+function renderStrips() { const c=document.getElementById('strip-rows'); c.innerHTML=''; window._rows.strips.forEach((r,i)=>appendStripRow(r,i)); }
+function renderPads()   { const c=document.getElementById('pad-rows');   c.innerHTML=''; window._rows.pads.forEach((r,i)=>appendPadRow(r,i)); }
+function renderPiles()  { const c=document.getElementById('pile-rows');  c.innerHTML=''; window._rows.piles.forEach((r,i)=>appendPileRow(r,i)); }
+function renderWalls()  { const c=document.getElementById('wall-rows');  c.innerHTML=''; window._rows.walls.forEach((r,i)=>appendWallRow(r,i)); }
+function renderSlabs()  { const c=document.getElementById('slab-rows');  c.innerHTML=''; window._rows.slabs.forEach((r,i)=>appendSlabRow(r,i)); }
+function renderAll()    { renderStrips(); renderPads(); renderPiles(); renderWalls(); renderSlabs(); renderDamp(); recalcSummary(); }
+
+
+// COPY STRIPS → WALLS
+function copyStripsToWalls() {
+  if (!window._rows.strips.length) { alert('No strip footings to copy.'); return; }
+  if (window._rows.walls.length > 0) {
+    if (!confirm('This will replace your current wall rows with a copy of the strip footings. Continue?')) return;
+  }
+  const defaultWallCode = catalogue.walls[0]?.code || '';
+  window._rows.walls = window._rows.strips.map(r => ({
+    typeCode: defaultWallCode,
+    location: r.location,
+    lf: r.lf,
+    htOverride: 0,
+    shared: r.shared || false,
+  }));
+  renderWalls();
+  recalcSummary();
+  markDirty();
+  document.getElementById('wall-rows').closest('.card').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ADD ROW HELPERS — append one row directly, never re-render the whole list
+function appendStripRow(r, i) {
+  const c = document.getElementById('strip-rows');
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:165px 1fr 90px 60px 80px 34px;gap:8px';
+  const isShared = !!r.shared;
+  d.innerHTML=`${buildSelect('strips',r.typeCode)}
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.strips[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.lf||'', `window._rows.strips[${i}].lf=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="shared-wrap"><input type="checkbox" class="shared-cb" id="ss-${i}" ${isShared?'checked':''} onchange="window._rows.strips[${i}].shared=this.checked;recalcAll();markDirty()"><label class="shared-label" for="ss-${i}">Shared</label></div>
+    <div class="result-cell${isShared?' is-shared':''}" id="sr-${i}">${m3fmt(stripVol(r))}</div>
+    <button class="del-btn" onclick="window._rows.strips.splice(${i},1);renderStrips();recalcSummary();markDirty()">×</button>`;
+  d.querySelector('select').addEventListener('change',function(){window._rows.strips[i].typeCode=this.value;recalcAll();markDirty();});
+  c.appendChild(d);
+}
+function appendPadRow(r, i) {
+  const c = document.getElementById('pad-rows');
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:165px 1fr 70px 80px 34px;gap:8px';
+  d.innerHTML=`${buildSelect('pads',r.typeCode)}
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.pads[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.qty||'', `window._rows.pads[${i}].qty=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="result-cell">${m3fmt(padVol(r))}</div>
+    <button class="del-btn" onclick="window._rows.pads.splice(${i},1);renderPads();recalcSummary();markDirty()">×</button>`;
+  d.querySelector('select').addEventListener('change',function(){window._rows.pads[i].typeCode=this.value;recalcAll();markDirty();});
+  c.appendChild(d);
+}
+function appendPileRow(r, i) {
+  const c = document.getElementById('pile-rows');
+  const cap=pileCapVol(r), shaft=pileShaftVol(r), total=cap+shaft;
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:165px 1fr 60px 80px 80px 90px 34px;gap:8px';
+  d.innerHTML=`${buildSelect('piles',r.typeCode)}
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.piles[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.qty||'', `window._rows.piles[${i}].qty=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="result-cell">${m3fmt(cap)}</div>
+    <div class="result-cell">${m3fmt(shaft)}</div>
+    <div class="result-cell pile-total">${m3fmt(total)}</div>
+    <button class="del-btn" onclick="window._rows.piles.splice(${i},1);renderPiles();recalcSummary();markDirty()">×</button>`;
+  d.querySelector('select').addEventListener('change',function(){window._rows.piles[i].typeCode=this.value;recalcAll();markDirty();});
+  c.appendChild(d);
+}
+function appendWallRow(r, i) {
+  const c = document.getElementById('wall-rows');
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:165px 1fr 90px 60px 80px 80px 34px;gap:8px';
+  const isShared=!!r.shared;
+  const catWall = catalogue.walls.find(w=>w.code===r.typeCode);
+  const displayHt = r.htOverride > 0 ? r.htOverride : (catWall?.defH || pv('p-wh') || '');
+  d.innerHTML=`${buildSelect('walls',r.typeCode)}
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.walls[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.lf||'', `window._rows.walls[${i}].lf=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="shared-wrap"><input type="checkbox" class="shared-cb" id="ws-${i}" ${isShared?'checked':''} onchange="window._rows.walls[${i}].shared=this.checked;recalcAll();markDirty()"><label class="shared-label" for="ws-${i}">Shared</label></div>
+    ${qtyInput(displayHt, `window._rows.walls[${i}].htOverride=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="result-cell${isShared?' is-shared':''}" id="wr-${i}">${m3fmt(wallVol(r))}</div>
+    <button class="del-btn" onclick="window._rows.walls.splice(${i},1);renderWalls();recalcSummary();markDirty()">×</button>`;
+  d.querySelector('select').addEventListener('change',function(){
+    window._rows.walls[i].typeCode=this.value;
+    window._rows.walls[i].htOverride=0;
+    renderWalls(); recalcSummary(); markDirty();
+  });
+  c.appendChild(d);
+}
+function appendSlabRow(r, i) {
+  const c = document.getElementById('slab-rows');
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:165px 1fr 100px 80px 34px;gap:8px';
+  d.innerHTML=`${buildSelect('slabs',r.typeCode)}
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.slabs[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.area||'', `window._rows.slabs[${i}].area=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="result-cell">${r.area||0}</div>
+    <button class="del-btn" onclick="window._rows.slabs.splice(${i},1);renderSlabs();recalcSummary();markDirty()">×</button>`;
+  d.querySelector('select').addEventListener('change',function(){window._rows.slabs[i].typeCode=this.value;recalcAll();markDirty();});
+  c.appendChild(d);
+}
+function appendDampRow(r, i) {
+  const c = document.getElementById('damp-rows');
+  const d = document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:1fr 100px 80px 80px 34px;gap:8px';
+  const defaultHt = pv('p-wh') || 9;
+  const displayHt = r.ht > 0 ? r.ht : defaultHt;
+  const area = Math.round(dampArea(r));
+  d.innerHTML=`
+    <input type="text" value="${r.location}" placeholder="Location…" oninput="window._rows.damp[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.lf||'', `window._rows.damp[${i}].lf=parseFloat(this.value)||0;recalcAll()`)}
+    ${qtyInput(displayHt, `window._rows.damp[${i}].ht=parseFloat(this.value)||0;recalcAll()`)}
+    <div class="result-cell" id="dp-${i}" style="color:#1a7a4a;background:#edf7f2;border-color:#a8dfc0">${area}</div>
+    <button class="del-btn" onclick="window._rows.damp.splice(${i},1);renderDamp();recalcSummary();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+function renderDamp() { const c=document.getElementById('damp-rows'); c.innerHTML=''; window._rows.damp.forEach((r,i)=>appendDampRow(r,i)); }
+
+function addStripRow() { const r={typeCode:catalogue.strips[0]?.code||'',location:'',lf:0,shared:false}; window._rows.strips.push(r); appendStripRow(r, window._rows.strips.length-1); recalcSummary(); }
+function addPadRow()   { const r={typeCode:catalogue.pads[0]?.code||'',location:'',qty:1}; window._rows.pads.push(r); appendPadRow(r, window._rows.pads.length-1); recalcSummary(); }
+function addPileRow()  { const r={typeCode:catalogue.piles[0]?.code||'',location:'',qty:1}; window._rows.piles.push(r); appendPileRow(r, window._rows.piles.length-1); recalcSummary(); }
+function addWallRow()  { const r={typeCode:catalogue.walls[0]?.code||'',location:'',lf:0,htOverride:0,shared:false}; window._rows.walls.push(r); appendWallRow(r, window._rows.walls.length-1); recalcSummary(); }
+function addSlabRow()  { const r={typeCode:catalogue.slabs[0]?.code||'',location:'',area:0}; window._rows.slabs.push(r); appendSlabRow(r, window._rows.slabs.length-1); recalcSummary(); }
+function addDampRow()  { const r={location:'',lf:0,ht:0}; window._rows.damp.push(r); appendDampRow(r, window._rows.damp.length-1); recalcSummary(); }
+
+function clearCardData(type) {
+  const labels = {strips:'Strip Footings',pads:'Pad Footings',piles:'Concrete Piles',walls:'Foundation Walls',slabs:'Slabs on Grade',damp:'Dampproofing'};
+  if (!confirm(`Clear all ${labels[type]||type} data? This cannot be undone.`)) return;
+  window._rows[type] = [];
+  const renderMap = {strips:renderStrips,pads:renderPads,piles:renderPiles,walls:renderWalls,slabs:renderSlabs,damp:renderDamp};
+  if (renderMap[type]) renderMap[type]();
+  recalcAll();
+  markDirty();
+}
+
+function recalcAll() {
+  // Update result cells in-place — never rebuild DOM rows (that kills focus)
+  window._rows.strips.forEach((r,i) => {
+    const el = document.getElementById(`sr-${i}`);
+    if (el) { el.textContent = m3fmt(stripVol(r)); el.className = 'result-cell' + (r.shared?' is-shared':''); }
+  });
+  window._rows.pads.forEach((r,i) => {
+    const cells = document.getElementById('pad-rows')?.querySelectorAll('.result-cell');
+    if (cells && cells[i]) cells[i].textContent = m3fmt(padVol(r));
+  });
+  window._rows.piles.forEach((r,i) => {
+    const cells = document.getElementById('pile-rows')?.querySelectorAll('.data-row')[i]?.querySelectorAll('.result-cell');
+    if (cells) { cells[0].textContent = m3fmt(pileCapVol(r)); cells[1].textContent = m3fmt(pileShaftVol(r)); cells[2].textContent = m3fmt(pileTotalVol(r)); }
+  });
+  window._rows.walls.forEach((r,i) => {
+    const el = document.getElementById(`wr-${i}`);
+    if (el) { el.textContent = m3fmt(wallVol(r)); el.className = 'result-cell' + (r.shared?' is-shared':''); }
+  });
+  window._rows.slabs.forEach((r,i) => {
+    const cells = document.getElementById('slab-rows')?.querySelectorAll('.result-cell');
+    if (cells && cells[i]) cells[i].textContent = r.area || 0;
+  });
+  window._rows.damp.forEach((r,i) => {
+    const el = document.getElementById(`dp-${i}`);
+    if (el) el.textContent = Math.round(dampArea(r));
+  });
+  recalcSummary();
+}
+function recalcSummary() {
+  const ts   = window._rows.strips.reduce((s,r)=>s+stripVol(r),0);
+  const tp   = window._rows.pads.reduce((s,r)=>s+padVol(r),0);
+  const tpc  = window._rows.piles.reduce((s,r)=>s+pileCapVol(r),0);
+  const tps  = window._rows.piles.reduce((s,r)=>s+pileShaftVol(r),0);
+  const tw   = window._rows.walls.reduce((s,r)=>s+wallVol(r),0);
+  const tsl  = window._rows.slabs.reduce((s,r)=>s+slabArea(r),0);
+  const tdamp = window._rows.damp.reduce((s,r)=>s+dampArea(r),0);
+  const waste = 1 + pv('p-waste')/100;
+  // FOOTINGS = strips + pads + pile caps
+  const footingsRaw = ts + tp + tpc;
+  // WALLS = pile shafts + foundation walls
+  const wallsRaw = tps + tw;
+  document.getElementById('s-strip').textContent          = m3fmt(ts);
+  document.getElementById('s-pads').textContent           = m3fmt(tp);
+  document.getElementById('s-pile-cap').textContent       = m3fmt(tpc);
+  document.getElementById('s-pile-shaft').textContent     = m3fmt(tps);
+  document.getElementById('s-walls').textContent          = m3fmt(tw);
+  document.getElementById('s-slabs').textContent          = Math.round(tsl);
+  document.getElementById('s-damp').textContent           = Math.round(tdamp);
+  document.getElementById('s-footings-total').textContent = m3fmt(footingsRaw * waste);
+  document.getElementById('s-walls-total').textContent    = m3fmt(wallsRaw * waste);
+}
+
+// ═══════════════════════════════════════════
+// FRAMING
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// FRAMING
+// ═══════════════════════════════════════════
+
+// Header size lookup — Canadian NBC load-bearing wall spans
+// Returns the recommended 2× member size for a given opening width (ft)
+function headerSize(openingFt) {
+  if (openingFt <= 2)  return '2×4';
+  if (openingFt <= 3)  return '2×6';
+  if (openingFt <= 4)  return '2×8';
+  if (openingFt <= 5)  return '2×10';
+  if (openingFt <= 6)  return '2×12';
+  return '2×12 + LVL'; // engineered required >6′
+}
+
+// Stud count formula (Canadian standard):
+// 0.75 studs/LF @ 16″ o.c. + opening adjustments — opens now carry qty
+function calcStuds(lf, opens, spacingIn, wasteP) {
+  const base = lf * (spacingIn === 16 ? 0.75 : (12 / spacingIn));
+  let openAdj = 0;
+  (opens||[]).forEach(o => { const q=o.qty||1; openAdj += o.w <= 5 ? 2*q : 1*q; });
+  return Math.ceil((base + openAdj) * (1 + wasteP / 100));
+}
+
+// Plate LF = wall LF × 3 (1 bottom + 2 top)
+function calcPlates(lf, wasteP) {
+  return Math.round(lf * 3 * (1 + wasteP / 100));
+}
+
+// Sheathing sheets — ext walls only. Wall area minus openings ÷ 32 (4×8 sheet)
+function calcSheathing(lf, ht, opens, wasteP) {
+  let openArea = 0;
+  (opens||[]).forEach(o => { openArea += (o.w * (o.h || 7)) * (o.qty||1); });
+  const net = Math.max(0, lf * ht - openArea);
+  return Math.ceil((net / 32) * (1 + wasteP / 100));
+}
+
+// Blocking: 10% of stud count
+function calcBlocking(studs) { return Math.ceil(studs * 0.10); }
+// Floor sheathing: area ÷ 32 + waste
+function calcFloorSheath(area, wasteP) { return Math.ceil((area / 32) * (1 + wasteP / 100)); }
+
+function fPv(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+
+// Map HTML type key → _rows property name
+function framingWallKey(type) {
+  const map = {
+    'bsmt':   'framingBsmt',
+    'mf-ext': 'framingMfExt', 'mf-int': 'framingMfInt',
+    'sf-ext': 'framingStExt', 'sf-int': 'framingStInt',
+    'tf-ext': 'framingTfExt', 'tf-int': 'framingTfInt',
+  };
+  return map[type] || 'framingBsmt';
+}
+function isExtType(type)  { return type.endsWith('-ext'); }
+
+// Map type → floor height input ID
+function floorHtId(type) {
+  if (type === 'bsmt') return 'flht-bsmt';
+  if (type.startsWith('mf')) return 'flht-mf';
+  if (type.startsWith('sf')) return 'flht-sf';
+  if (type.startsWith('tf')) return 'flht-tf';
+  return 'pf-ht';
+}
+// Get effective height for a wall row — floor-level default, no per-row override
+function getWallHt(type) { return fPv(floorHtId(type)) || fPv('pf-ht') || 9; }
+
+// Map type → card-level spacing dropdown ID
+function cardSpacingId(type) {
+  const map = {
+    'bsmt':'cs-bsmt',
+    'mf-ext':'cs-mf-ext', 'mf-int':'cs-mf-int',
+    'sf-ext':'cs-sf-ext', 'sf-int':'cs-sf-int',
+    'tf-ext':'cs-tf-ext', 'tf-int':'cs-tf-int',
+  };
+  return map[type] || 'cs-bsmt';
+}
+// Get effective spacing for a row: per-row override > card dropdown > global preset
+function getRowSpacing(type, row) {
+  if (row && row.spacing && row.spacing !== 'default') return parseInt(row.spacing);
+  const cardSel = document.getElementById(cardSpacingId(type));
+  if (cardSel) return parseInt(cardSel.value) || 16;
+  return fPv(isExtType(type) ? 'pf-ext' : 'pf-int') || 16;
+}
+
+// ── WALL ROW APPEND ──
+function appendFramingWallRow(type, r, i) {
+  const c = document.getElementById('framing-' + type); if (!c) return;
+  const isExt  = isExtType(type);
+  const sp     = getRowSpacing(type, r);
+  const ht     = getWallHt(type);
+  const sw     = fPv('pf-stud-waste'), pw = fPv('pf-plate-waste'), shw = fPv('pf-sheath-waste');
+  const studs  = calcStuds(r.lf, r.opens, sp, sw);
+  const plates = calcPlates(r.lf, pw);
+  const sheath = isExt ? calcSheathing(r.lf, ht, r.opens, shw) : null;
+  const block  = isExt ? calcBlocking(studs) : null;
+  const key    = framingWallKey(type);
+  const isBsmt = type === 'bsmt';
+  const grid   = isExt
+    ? '1fr 70px 52px 60px 54px 54px 54px 60px 34px'
+    : (isBsmt ? '1fr 70px 52px 60px 54px 54px 34px' : '1fr 70px 52px 60px 54px 54px 34px');
+  const opensCount = (r.opens||[]).reduce((s,o)=>s+(o.qty||1), 0);
+  const curSp = r.spacing || 'default';
+  const selStyle = 'font-family:inherit;font-size:10px;padding:1px 2px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text);width:52px';
+  const d = document.createElement('div');
+  d.className = 'data-row';
+  d.style.cssText = `grid-template-columns:${grid};gap:6px;align-items:start;padding:6px 0;border-bottom:1px solid var(--border)`;
+  d.innerHTML = `
+    <div>
+      <input type="text" value="${r.location||''}" placeholder="Location…"
+        style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--surface);color:var(--text)"
+        oninput="window._rows.${key}[${i}].location=this.value" onblur="markDirty()">
+      <div style="margin-top:4px;font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace" id="fw-opens-label-${type}-${i}">${opensCount} opening${opensCount!==1?'s':''}</div>
+      <button onclick="openFramingOpens('${type}',${i})"
+        style="font-family:inherit;font-size:10px;color:var(--navy);background:rgba(27,58,92,.06);border:1px solid rgba(27,58,92,.2);border-radius:4px;padding:2px 7px;cursor:pointer;margin-top:3px">
+        Edit openings
+      </button>
+    </div>
+    ${qtyInput(r.lf||'', `window._rows.${key}[${i}].lf=parseFloat(this.value)||0;recalcFraming()`)}
+    <select style="${selStyle}" onchange="window._rows.${key}[${i}].spacing=this.value;recalcFraming();markDirty()">
+      <option value="default"${curSp==='default'?' selected':''}>—</option>
+      <option value="12"${curSp==='12'||curSp===12?' selected':''}>12″</option>
+      <option value="16"${curSp==='16'||curSp===16?' selected':''}>16″</option>
+      <option value="24"${curSp==='24'||curSp===24?' selected':''}>24″</option>
+    </select>
+    <div style="font-size:11px;color:var(--text-muted);padding:6px 0;text-align:right">${opensCount}</div>
+    <div class="result-cell" id="fw-studs-${type}-${i}">${studs}</div>
+    <div class="result-cell" id="fw-plates-${type}-${i}">${plates}</div>
+    ${isExt ? `<div class="result-cell" id="fw-sheath-${type}-${i}">${sheath}</div>` : ''}
+    ${isExt ? `<div class="result-cell" id="fw-block-${type}-${i}">${block}</div>` : ''}
+    <button class="del-btn" onclick="window._rows.${key}.splice(${i},1);renderFramingWalls('${type}');recalcFraming();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+
+function renderFramingWalls(type) {
+  const c = document.getElementById('framing-' + type); if (!c) return;
+  c.innerHTML = '';
+  const key = framingWallKey(type);
+  (window._rows[key]||[]).forEach((r, i) => appendFramingWallRow(type, r, i));
+}
+
+function addFramingWallRow(type) {
+  const key = framingWallKey(type);
+  if (!window._rows[key]) window._rows[key] = [];
+  const r = { location:'', lf:0, ht:0, opens:[] };
+  window._rows[key].push(r);
+  appendFramingWallRow(type, r, window._rows[key].length - 1);
+  recalcFraming();
+}
+
+// ── OPENINGS MODAL ──
+let _opensCtx = null;
+
+function openFramingOpens(type, idx) {
+  _opensCtx = { type, idx };
+  const key = framingWallKey(type);
+  if (!window._rows[key]) return;
+  const r = window._rows[key][idx];
+  document.getElementById('opens-modal-title').textContent =
+    `Openings — ${r.location || type.toUpperCase()+' wall '+(idx+1)}`;
+  renderOpensList(r.opens || []);
+  document.getElementById('opens-modal').classList.add('open');
+}
+
+// ── FLOOR SHEATHING ──
+function appendFloorSheathRow(floor, r, i) {
+  const c = document.getElementById('framing-' + floor + '-floor'); if (!c) return;
+  const key = 'framingFloor' + floor.toUpperCase();
+  const sheets = calcFloorSheath(r.area||0, fPv('pf-floor-waste'));
+  const d = document.createElement('div'); d.className = 'data-row';
+  d.style.cssText = 'grid-template-columns:1fr 110px 80px 34px;gap:8px';
+  d.innerHTML = `
+    <input type="text" value="${r.location||''}" placeholder="Location…"
+      style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--surface);color:var(--text)"
+      oninput="window._rows.${key}[${i}].location=this.value" onblur="markDirty()">
+    ${qtyInput(r.area||'', `window._rows.${key}[${i}].area=parseFloat(this.value)||0;recalcFraming()`)}
+    <div class="result-cell" id="ffs-${floor}-${i}" style="background:#edf7f2;border-color:#a8dfc0;color:#1a7a4a">${sheets}</div>
+    <button class="del-btn" onclick="window._rows.${key}.splice(${i},1);renderFloorSheath('${floor}');recalcFraming();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+
+function renderFloorSheath(floor) {
+  const c = document.getElementById('framing-' + floor + '-floor'); if (!c) return;
+  c.innerHTML = '';
+  const key = 'framingFloor' + floor.toUpperCase();
+  (window._rows[key]||[]).forEach((r, i) => appendFloorSheathRow(floor, r, i));
+}
+
+function addFloorSheathRow(floor) {
+  const key = 'framingFloor' + floor.toUpperCase();
+  if (!window._rows[key]) window._rows[key] = [];
+  const r = { location:'', area:0 };
+  window._rows[key].push(r);
+  appendFloorSheathRow(floor, r, window._rows[key].length - 1);
+  recalcFraming();
+}
+
+function renderOpensList(opens) {
+  const list = document.getElementById('opens-list');
+  list.innerHTML = '';
+  if (!opens.length) {
+    list.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--text-muted)">No openings added.</div>';
+    return;
+  }
+  opens.forEach((o, i) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'display:grid;grid-template-columns:1fr 50px 80px 80px 34px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)';
+    const feval = (val, field) => `try{var v=Function('return ('+this.value+')');var r=v();if(isFinite(r)){this.value=parseFloat(r.toFixed(3));getOpensArr()[${i}].${field}=+this.value;}else{this.style.borderColor='var(--red)';return;}this.style.borderColor='';}catch(e){this.style.borderColor='var(--red)';}`;
+    d.innerHTML = `
+      <input type="text" value="${o.label||''}" placeholder="Door / window label…"
+        style="padding:5px 7px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:12px;background:var(--bg);color:var(--text)"
+        oninput="getOpensArr()[${i}].label=this.value">
+      <input type="text" value="${o.qty||1}" placeholder="1" maxlength="4"
+        style="text-align:right;padding:5px 7px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text)"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+        onblur="getOpensArr()[${i}].qty=parseInt(this.value)||1">
+      <input type="text" value="${o.w||''}" placeholder="W (ft)" maxlength="6"
+        style="text-align:right;padding:5px 7px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text)"
+        oninput="this.value=this.value.replace(/[^0-9.+\\-*\\/() ]/g,'');"
+        onblur="${feval(o.w,'w')}">
+      <input type="text" value="${o.h||''}" placeholder="H (ft)" maxlength="6"
+        style="text-align:right;padding:5px 7px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:12px;background:var(--bg);color:var(--text)"
+        oninput="this.value=this.value.replace(/[^0-9.+\\-*\\/() ]/g,'');"
+        onblur="${feval(o.h,'h')}">
+      <button class="del-btn" onclick="getOpensArr().splice(${i},1);renderOpensList(getOpensArr())">×</button>`;
+    list.appendChild(d);
+  });
+}
+
+function getOpensArr() {
+  if (!_opensCtx) return [];
+  const key = framingWallKey(_opensCtx.type);
+  return window._rows[key][_opensCtx.idx].opens || (window._rows[key][_opensCtx.idx].opens = []);
+}
+
+function addOpening() {
+  getOpensArr().push({ label:'', qty:1, w:0, h:0 });
+  renderOpensList(getOpensArr());
+}
+
+function closeOpensModal() {
+  document.getElementById('opens-modal').classList.remove('open');
+  recalcFraming();
+  markDirty();
+  _opensCtx = null;
+}
+
+// ── HEADERS ──
+function appendHeaderRow(r, i) {
+  const c = document.getElementById('framing-headers');
+  const size = headerSize(r.w || 0);
+  const pcs = (r.qty || 1) * 2; // headers are always 2 members
+  const d = document.createElement('div'); d.className = 'data-row';
+  d.style.cssText = 'grid-template-columns:1fr 80px 60px 100px 60px 34px;gap:6px';
+  d.innerHTML = `
+    <input type="text" value="${r.label||''}" placeholder="Location / description…"
+      style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;font-size:13px;background:var(--surface);color:var(--text)"
+      oninput="window._rows.framingHeaders[${i}].label=this.value" onblur="markDirty()">
+    ${qtyInput(r.w||'', `window._rows.framingHeaders[${i}].w=parseFloat(this.value)||0;recalcFraming()`)}
+    ${qtyInput(r.qty||'', `window._rows.framingHeaders[${i}].qty=parseFloat(this.value)||1;recalcFraming()`)}
+    <div class="result-cell" id="fh-size-${i}" style="text-align:center;font-size:11px">${size}</div>
+    <div class="result-cell" id="fh-pcs-${i}">${pcs}</div>
+    <button class="del-btn" onclick="window._rows.framingHeaders.splice(${i},1);renderFramingHeaders();recalcFraming();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+
+function renderFramingHeaders() {
+  const c = document.getElementById('framing-headers'); c.innerHTML = '';
+  window._rows.framingHeaders.forEach((r, i) => appendHeaderRow(r, i));
+}
+
+function addHeaderRow() {
+  const r = { label:'', w:0, qty:1 };
+  window._rows.framingHeaders.push(r);
+  appendHeaderRow(r, window._rows.framingHeaders.length - 1);
+  recalcFraming();
+}
+
+// ── RECALC FRAMING ──
+function recalcFraming() {
+  const sw    = fPv('pf-stud-waste') || 15;
+  const pw    = fPv('pf-plate-waste') || 10;
+  const shw   = fPv('pf-sheath-waste') || 10;
+  const flw   = fPv('pf-floor-waste') || 10;
+  const el    = id => document.getElementById(id);
+
+  // Helper to recalc one wall section
+  function recalcWallSection(type, sIdStuds, sIdPlates, sIdSheath) {
+    const key = framingWallKey(type);
+    const isExt = isExtType(type);
+    const ht = getWallHt(type);
+    let totStuds=0, totPlates=0, totSheath=0;
+    (window._rows[key]||[]).forEach((r,i) => {
+      const sp = getRowSpacing(type, r);
+      const s  = calcStuds(r.lf, r.opens, sp, sw);
+      const p  = calcPlates(r.lf, pw);
+      const sh = isExt ? calcSheathing(r.lf, ht, r.opens, shw) : 0;
+      const bl = isExt ? calcBlocking(s) : 0;
+      totStuds += s; totPlates += p; totSheath += sh;
+      if(el(`fw-studs-${type}-${i}`))  el(`fw-studs-${type}-${i}`).textContent  = s;
+      if(el(`fw-plates-${type}-${i}`)) el(`fw-plates-${type}-${i}`).textContent = p;
+      if(isExt && el(`fw-sheath-${type}-${i}`)) el(`fw-sheath-${type}-${i}`).textContent = sh;
+      if(isExt && el(`fw-block-${type}-${i}`))  el(`fw-block-${type}-${i}`).textContent  = bl;
+      const cnt = (r.opens||[]).reduce((s,o)=>s+(o.qty||1),0);
+      const lb = el(`fw-opens-label-${type}-${i}`);
+      if(lb) lb.textContent = `${cnt} opening${cnt!==1?'s':''}`;
+    });
+    if(el(sIdStuds))  el(sIdStuds).textContent  = totStuds;
+    if(el(sIdPlates)) el(sIdPlates).textContent = totPlates;
+    if(sIdSheath && el(sIdSheath)) el(sIdSheath).textContent = totSheath;
+    return { studs: totStuds, plates: totPlates, sheath: totSheath };
+  }
+
+  // Helper to recalc one floor sheathing section
+  function recalcFloorSection(floor, sId) {
+    const key = 'framingFloor' + floor.toUpperCase();
+    let tot = 0;
+    (window._rows[key]||[]).forEach((r,i) => {
+      const sh = calcFloorSheath(r.area||0, flw);
+      tot += sh;
+      if(el(`ffs-${floor}-${i}`)) el(`ffs-${floor}-${i}`).textContent = sh;
+    });
+    if(el(sId)) el(sId).textContent = tot;
+    return tot;
+  }
+
+  const bsmt  = recalcWallSection('bsmt',   'fb-studs',   'fb-plates',   null);
+  const mfExt = recalcWallSection('mf-ext', 'fmfe-studs', 'fmfe-plates', 'fmfe-sheath');
+  const mfInt = recalcWallSection('mf-int', 'fmfi-studs', 'fmfi-plates', null);
+  const sfExt = recalcWallSection('sf-ext', 'fsfe-studs', 'fsfe-plates', 'fsfe-sheath');
+  const sfInt = recalcWallSection('sf-int', 'fsfi-studs', 'fsfi-plates', null);
+  const tfExt = recalcWallSection('tf-ext', 'ftfe-studs', 'ftfe-plates', 'ftfe-sheath');
+  const tfInt = recalcWallSection('tf-int', 'ftfi-studs', 'ftfi-plates', null);
+
+  recalcFloorSection('mf', 'fmf-floor');
+  recalcFloorSection('sf', 'fsf-floor');
+  recalcFloorSection('tf', 'ftf-floor');
+
+  // Headers
+  let hTotal = 0;
+  (window._rows.framingHeaders||[]).forEach((r,i) => {
+    const size = headerSize(r.w || 0);
+    const pcs  = (r.qty || 1) * 2;
+    hTotal += pcs;
+    if(el(`fh-size-${i}`)) el(`fh-size-${i}`).textContent = size;
+    if(el(`fh-pcs-${i}`))  el(`fh-pcs-${i}`).textContent  = pcs;
+  });
+  if(el('fh-total')) el('fh-total').textContent = hTotal;
+
+  const totalStuds = bsmt.studs + mfExt.studs + mfInt.studs + sfExt.studs + sfInt.studs + tfExt.studs + tfInt.studs;
+  if(el('f-total-studs')) el('f-total-studs').textContent = totalStuds;
+
+  // ── LUMBER BUDGET ──
+  // Prices from pricing card
+  const lp = id => parseFloat(document.getElementById(id)?.value) || 0;
+
+  // Stud length selections: 92 or 104
+  const len26  = document.getElementById('lp-stud-26-len')?.value  || '92';
+  const len24  = document.getElementById('lp-stud-24-len')?.value  || '92';
+  const lenBsmt= document.getElementById('lp-stud-bsmt-len')?.value || '92';
+
+  const priceStud26  = len26   === '104' ? lp('lp-stud-26-104') : lp('lp-stud-26-92');
+  const priceStud24  = len24   === '104' ? lp('lp-stud-24-104') : lp('lp-stud-24-92');
+  const priceStudBsmt= lenBsmt === '104' ? lp('lp-stud-24-104') : lp('lp-stud-24-92');
+
+  // Ext studs (2×6) = all ext-type sections
+  const extStudCount = mfExt.studs + sfExt.studs + tfExt.studs;
+  // Int studs (2×4) = all int-type sections
+  const intStudCount = mfInt.studs + sfInt.studs + tfInt.studs;
+  // Bsmt studs (2×4)
+  const bsmtStudCount = bsmt.studs;
+
+  const costStud26   = extStudCount  * priceStud26;
+  const costStud24Int= intStudCount  * priceStud24;
+  const costStud24Bsmt= bsmtStudCount * priceStudBsmt;
+
+  // Plates: convert LF → 16′ pieces (ceil), multiply by price/piece
+  const extPlatesLF = mfExt.plates + sfExt.plates + tfExt.plates;
+  const intPlatesLF = mfInt.plates + sfInt.plates + tfInt.plates + bsmt.plates;
+  const costPlate26 = Math.ceil(extPlatesLF / 16) * lp('lp-plate-26');
+  const costPlate24 = Math.ceil(intPlatesLF / 16) * lp('lp-plate-24');
+
+  // Wall sheathing sheets
+  const wallSheathSheets = mfExt.sheath + sfExt.sheath + tfExt.sheath;
+  const costWallSheath = wallSheathSheets * lp('lp-wall-sheath');
+
+  // Floor sheathing sheets
+  const floorMFSheets = (window._rows.framingFloorMF||[]).reduce((s,r)=>s+calcFloorSheath(r.area||0,flw),0);
+  const floorSFSheets = (window._rows.framingFloorSF||[]).reduce((s,r)=>s+calcFloorSheath(r.area||0,flw),0);
+  const floorTFSheets = (window._rows.framingFloorTF||[]).reduce((s,r)=>s+calcFloorSheath(r.area||0,flw),0);
+  const costFloorSheath = (floorMFSheets + floorSFSheets + floorTFSheets) * lp('lp-floor-sheath');
+
+  // Headers — price by member size (each header = 2 pieces)
+  let costHeaders = 0;
+  (window._rows.framingHeaders||[]).forEach(r => {
+    const size = headerSize(r.w || 0);
+    const pcs  = (r.qty || 1) * 2;
+    let unitPrice = 0;
+    if (size === '2×8')          unitPrice = lp('lp-hdr-2x8');
+    else if (size === '2×10')    unitPrice = lp('lp-hdr-2x10');
+    else if (size.startsWith('2×12')) unitPrice = lp('lp-hdr-2x12');
+    // LVL: price per ft × 12 (assuming 12′ member)
+    else if (size.includes('LVL')) unitPrice = lp('lp-lvl') * 12;
+    costHeaders += pcs * unitPrice;
+  });
+
+  const fmt = v => v.toLocaleString('en-CA', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const setc = (id, v) => { const e = el(id); if(e) e.textContent = fmt(v); };
+  setc('lc-stud-26',      costStud26);
+  setc('lc-stud-24-int',  costStud24Int);
+  setc('lc-stud-24-bsmt', costStud24Bsmt);
+  setc('lc-plate-26',     costPlate26);
+  setc('lc-plate-24',     costPlate24);
+  setc('lc-wall-sheath',  costWallSheath);
+  setc('lc-floor-sheath', costFloorSheath);
+  setc('lc-headers',      costHeaders);
+  const grand = costStud26 + costStud24Int + costStud24Bsmt + costPlate26 + costPlate24 + costWallSheath + costFloorSheath + costHeaders;
+  const eg = el('lc-total'); if(eg) eg.textContent = '$' + Math.round(grand).toLocaleString('en-CA');
+}
+
+// ═══════════════════════════════════════════
+// WINDOWS
+// ═══════════════════════════════════════════
+function addWinRow(type) {
+  const arr=type==='win'?window._rows.windows:window._rows.doors;
+  const i=arr.length; arr.push({label:'',w:0,h:0,qty:1});
+  const c=document.getElementById(type+'-rows');
+  const d=document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:1fr 90px 90px 60px 34px;gap:8px';
+  const key=type==='win'?'windows':'doors';
+  d.innerHTML=`<input type="text" placeholder="Description…" oninput="window._rows.${key}[${i}].label=this.value" onblur="markDirty()">
+    <input type="number" placeholder="0" oninput="window._rows.${key}[${i}].w=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <input type="number" placeholder="0" oninput="window._rows.${key}[${i}].h=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <input type="number" value="1" oninput="window._rows.${key}[${i}].qty=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <button class="del-btn" onclick="window._rows.${key}.splice(${i},1);this.closest('.data-row').remove();recalcWindows();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+function recalcWindows() {
+  const wc=window._rows.windows.reduce((s,r)=>s+r.qty,0);
+  const dc=window._rows.doors.reduce((s,r)=>s+r.qty,0);
+  const area=[...window._rows.windows,...window._rows.doors].reduce((s,r)=>s+(r.w/12)*(r.h/12)*r.qty,0);
+  document.getElementById('w-win').textContent=wc;
+  document.getElementById('w-door').textContent=dc;
+  document.getElementById('w-area').textContent=Math.round(area*10)/10;
+}
+
+// ═══════════════════════════════════════════
+// DRYWALL
+// ═══════════════════════════════════════════
+function addDwRow() {
+  const i=window._rows.drywall.length;
+  window._rows.drywall.push({label:'',area:0,sheet:'4x8'});
+  const c=document.getElementById('dw-rows');
+  const d=document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:1fr 110px 90px 80px 34px;gap:8px';
+  d.innerHTML=`<input type="text" placeholder="Location…" oninput="window._rows.drywall[${i}].label=this.value" onblur="markDirty()">
+    <input type="number" placeholder="0" oninput="window._rows.drywall[${i}].area=+this.value;recalcDrywall()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <select oninput="window._rows.drywall[${i}].sheet=this.value;recalcDrywall();markDirty()" style="font-family:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+      <option>4x8</option><option>4x9</option><option>4x12</option>
+    </select>
+    <div class="result-cell" id="dw-${i}">0</div>
+    <button class="del-btn" onclick="window._rows.drywall.splice(${i},1);this.closest('.data-row').remove();recalcDrywall();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+function recalcDrywall() {
+  const waste=1+pv('pd-waste')/100;
+  const sizes={'4x8':32,'4x9':36,'4x12':48};
+  let ta=0,ts=0;
+  window._rows.drywall.forEach((r,i)=>{
+    const sh=Math.ceil((r.area/(sizes[r.sheet]||32))*waste);
+    ta+=r.area; ts+=sh;
+    const el=document.getElementById(`dw-${i}`); if(el)el.textContent=sh;
+  });
+  document.getElementById('d-area').textContent=ta;
+  document.getElementById('d-sheets').textContent=ts;
+}
+
+// ═══════════════════════════════════════════
+// CATALOGUE SETTINGS
+// ═══════════════════════════════════════════
+function renderCatTable(type) {
+  const tbody=document.getElementById('cat-'+type); tbody.innerHTML='';
+  cat[type].forEach((item,i) => {
+    const tr=document.createElement('tr');
+    if(type==='strips') tr.innerHTML=`<td><input type="text" value="${item.code}" oninput="cat.strips[${i}].code=this.value" style="width:100%"></td><td><input type="number" value="${item.w}" oninput="cat.strips[${i}].w=+this.value" style="width:100%"></td><td><input type="number" value="${item.d}" oninput="cat.strips[${i}].d=+this.value" style="width:100%"></td><td><button class="del-btn" onclick="cat.strips.splice(${i},1);renderCatTable('strips')">×</button></td>`;
+    else if(type==='pads') tr.innerHTML=`<td><input type="text" value="${item.code}" oninput="cat.pads[${i}].code=this.value" style="width:100%"></td><td><input type="number" value="${item.l}" oninput="cat.pads[${i}].l=+this.value" style="width:100%"></td><td><input type="number" value="${item.w}" oninput="cat.pads[${i}].w=+this.value" style="width:100%"></td><td><input type="number" value="${item.d}" oninput="cat.pads[${i}].d=+this.value" style="width:100%"></td><td><button class="del-btn" onclick="cat.pads.splice(${i},1);renderCatTable('pads')">×</button></td>`;
+    else if(type==='piles') tr.innerHTML=`<td><input type="text" value="${item.code}" oninput="cat.piles[${i}].code=this.value" style="width:80px"></td><td><input type="number" value="${item.capL}" oninput="cat.piles[${i}].capL=+this.value" style="width:100%"></td><td><input type="number" value="${item.capW}" oninput="cat.piles[${i}].capW=+this.value" style="width:100%"></td><td><input type="number" value="${item.capD}" oninput="cat.piles[${i}].capD=+this.value" style="width:100%"></td><td><input type="number" value="${item.shaftDia}" oninput="cat.piles[${i}].shaftDia=+this.value" style="width:100%"></td><td><input type="number" value="${item.shaftHt}" oninput="cat.piles[${i}].shaftHt=+this.value" style="width:100%"></td><td><button class="del-btn" onclick="cat.piles.splice(${i},1);renderCatTable('piles')">×</button></td>`;
+    else if(type==='walls') tr.innerHTML=`<td><input type="text" value="${item.code}" oninput="cat.walls[${i}].code=this.value" style="width:100%"></td><td><input type="number" value="${item.thick}" oninput="cat.walls[${i}].thick=+this.value" style="width:100%"></td><td><input type="number" value="${item.defH}" oninput="cat.walls[${i}].defH=+this.value" style="width:100%"></td><td><button class="del-btn" onclick="cat.walls.splice(${i},1);renderCatTable('walls')">×</button></td>`;
+    else if(type==='slabs') tr.innerHTML=`<td><input type="text" value="${item.code}" oninput="cat.slabs[${i}].code=this.value" style="width:100%"></td><td><input type="number" value="${item.thick}" oninput="cat.slabs[${i}].thick=+this.value" style="width:100%"></td><td><button class="del-btn" onclick="cat.slabs.splice(${i},1);renderCatTable('slabs')">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function addCatRow(type) {
+  if(type==='strips') cat.strips.push({code:'NEW',w:18,d:8});
+  else if(type==='pads') cat.pads.push({code:'NEW',l:24,w:24,d:10});
+  else if(type==='piles') cat.piles.push({code:'NEW',capL:24,capW:24,capD:10,shaftDia:12,shaftHt:6});
+  else if(type==='walls') cat.walls.push({code:'NEW',thick:8,defH:9});
+  else if(type==='slabs') cat.slabs.push({code:'NEW',thick:4});
+  renderCatTable(type);
+}
+function openSettings() {
+  cat=JSON.parse(JSON.stringify(catalogue));
+  ['strips','pads','piles','walls','slabs'].forEach(t=>renderCatTable(t));
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+function saveSettings() {
+  catalogue=JSON.parse(JSON.stringify(cat));
+  closeSettings(); recalcAll(); markDirty();
+}
+function exportCatalogue() {
+  const blob=new Blob([JSON.stringify(catalogue,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='catalogue.json'; a.click();
+}
+function importCatalogue(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const data=JSON.parse(e.target.result);
+      if(data.strips||data.pads||data.walls||data.slabs) {
+        cat=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOGUE)),data);
+        ['strips','pads','piles','walls','slabs'].forEach(t=>renderCatTable(t));
+        alert('Catalogue imported. Click "Save catalogue" to apply.');
+      } else { alert('Invalid catalogue file.'); }
+    } catch(err) { alert('Could not read file.'); }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(name,el) {
+  document.querySelectorAll('.trade-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.trade-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════
+let saveTimer=null;
+function markDirty() {
+  clearTimeout(saveTimer);
+  document.getElementById('save-indicator').textContent='Saving…';
+  saveTimer=setTimeout(()=>{ persistCurrentProject(); document.getElementById('save-indicator').textContent='Saved'; },900);
+}
+function applySnap(snap) {
+  if(snap.name) document.getElementById('project-name').value=snap.name;
+  const set=(id,v)=>{ if(v!=null){const el=document.getElementById(id);if(el)el.value=v;}};
+  set('pi-address',snap.piAddress); set('pi-community',snap.piCommunity); set('pi-date',snap.piDate);
+  set('notes-general',snap.notes); set('notes-flags',snap.flags);
+  if(snap.presets){
+    set('p-wh',snap.presets.wh); set('p-waste',snap.presets.waste);
+    set('pf-ext',snap.presets.pfExt); set('pf-int',snap.presets.pfInt);
+    set('pf-ht',snap.presets.pfHt); set('pf-stud-waste',snap.presets.pfStudWaste);
+    set('pf-plate-waste',snap.presets.pfPlateWaste); set('pf-sheath-waste',snap.presets.pfSheathWaste);
+    set('pf-floor-waste',snap.presets.pfFloorWaste);
+    set('pd-waste',snap.presets.pdWaste);
+    if(snap.presets.flhtBsmt) set('flht-bsmt',snap.presets.flhtBsmt);
+    if(snap.presets.flhtMf)   set('flht-mf',  snap.presets.flhtMf);
+    if(snap.presets.flhtSf)   set('flht-sf',  snap.presets.flhtSf);
+    if(snap.presets.flhtTf)   set('flht-tf',  snap.presets.flhtTf);
+    // Restore card-level stud spacing dropdowns
+    const setS=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.value=v;};
+    setS('cs-bsmt',snap.presets.csBsmt);
+    setS('cs-mf-ext',snap.presets.csMfExt); setS('cs-mf-int',snap.presets.csMfInt);
+    setS('cs-sf-ext',snap.presets.csSfExt); setS('cs-sf-int',snap.presets.csSfInt);
+    setS('cs-tf-ext',snap.presets.csTfExt); setS('cs-tf-int',snap.presets.csTfInt);
+    // Restore lumber pricing
+    if(snap.presets.lpStud2492!=null) set('lp-stud-24-92',snap.presets.lpStud2492);
+    if(snap.presets.lpStud24104!=null) set('lp-stud-24-104',snap.presets.lpStud24104);
+    if(snap.presets.lpStud2692!=null) set('lp-stud-26-92',snap.presets.lpStud2692);
+    if(snap.presets.lpStud26104!=null) set('lp-stud-26-104',snap.presets.lpStud26104);
+    if(snap.presets.lpPlate24!=null) set('lp-plate-24',snap.presets.lpPlate24);
+    if(snap.presets.lpPlate26!=null) set('lp-plate-26',snap.presets.lpPlate26);
+    if(snap.presets.lpWallSheath!=null) set('lp-wall-sheath',snap.presets.lpWallSheath);
+    if(snap.presets.lpFloorSheath!=null) set('lp-floor-sheath',snap.presets.lpFloorSheath);
+    if(snap.presets.lpHdr2x8!=null) set('lp-hdr-2x8',snap.presets.lpHdr2x8);
+    if(snap.presets.lpHdr2x10!=null) set('lp-hdr-2x10',snap.presets.lpHdr2x10);
+    if(snap.presets.lpHdr2x12!=null) set('lp-hdr-2x12',snap.presets.lpHdr2x12);
+    if(snap.presets.lpLvl!=null) set('lp-lvl',snap.presets.lpLvl);
+    setS('lp-stud-26-len',snap.presets.lpStud26Len);
+    setS('lp-stud-24-len',snap.presets.lpStud24Len);
+    setS('lp-stud-bsmt-len',snap.presets.lpStudBsmtLen);
+  }
+  if(snap.catalogue) catalogue=snap.catalogue;
+  if(snap.rows) {
+    window._rows=Object.assign(blankRows(),snap.rows);
+    renderStrips(); renderPads(); renderPiles(); renderWalls(); renderSlabs(); renderDamp();
+    // Render all framing wall sections
+    ['bsmt','mf-ext','mf-int','sf-ext','sf-int','tf-ext','tf-int'].forEach(t => renderFramingWalls(t));
+    // Render floor sheathing sections
+    ['mf','sf','tf'].forEach(f => renderFloorSheath(f));
+    renderFramingHeaders();
+    // Rebuild windows/doors/drywall
+    document.getElementById('win-rows').innerHTML='';
+    document.getElementById('door-rows').innerHTML='';
+    document.getElementById('dw-rows').innerHTML='';
+    window._rows.windows.forEach((_,i)=>rebuildWinRow('win',i));
+    window._rows.doors.forEach((_,i)=>rebuildWinRow('door',i));
+    window._rows.drywall.forEach((_,i)=>rebuildDwRow(i));
+  }
+  recalcAll();
+}
+function rebuildWinRow(type,i) {
+  const arr=type==='win'?window._rows.windows:window._rows.doors;
+  const r=arr[i]; const key=type==='win'?'windows':'doors';
+  const c=document.getElementById(type+'-rows');
+  const d=document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:1fr 90px 90px 60px 34px;gap:8px';
+  d.innerHTML=`<input type="text" value="${r.label||''}" placeholder="Description…" oninput="window._rows.${key}[${i}].label=this.value" onblur="markDirty()">
+    <input type="number" value="${r.w||''}" oninput="window._rows.${key}[${i}].w=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <input type="number" value="${r.h||''}" oninput="window._rows.${key}[${i}].h=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <input type="number" value="${r.qty||1}" oninput="window._rows.${key}[${i}].qty=+this.value;recalcWindows()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <button class="del-btn" onclick="window._rows.${key}.splice(${i},1);this.closest('.data-row').remove();recalcWindows();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+function rebuildDwRow(i) {
+  const r=window._rows.drywall[i];
+  const c=document.getElementById('dw-rows');
+  const d=document.createElement('div'); d.className='data-row';
+  d.style.cssText='grid-template-columns:1fr 110px 90px 80px 34px;gap:8px';
+  d.innerHTML=`<input type="text" value="${r.label||''}" placeholder="Location…" oninput="window._rows.drywall[${i}].label=this.value" onblur="markDirty()">
+    <input type="number" value="${r.area||''}" oninput="window._rows.drywall[${i}].area=+this.value;recalcDrywall()" onblur="markDirty()" style="text-align:right;font-family:'DM Mono',monospace">
+    <select oninput="window._rows.drywall[${i}].sheet=this.value;recalcDrywall();markDirty()" style="font-family:inherit;font-size:13px;padding:5px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+      <option${r.sheet==='4x8'?' selected':''}>4x8</option>
+      <option${r.sheet==='4x9'?' selected':''}>4x9</option>
+      <option${r.sheet==='4x12'?' selected':''}>4x12</option>
+    </select>
+    <div class="result-cell" id="dw-${i}">0</div>
+    <button class="del-btn" onclick="window._rows.drywall.splice(${i},1);this.closest('.data-row').remove();recalcDrywall();markDirty()">×</button>`;
+  c.appendChild(d);
+}
+
+// ═══════════════════════════════════════════
+// EXPORT / PRINT
+// ═══════════════════════════════════════════
+function openExport() {
+  const proj=document.getElementById('project-name').value||'Unnamed Project';
+  const date=new Date().toLocaleDateString('en-CA');
+  document.getElementById('export-preview').innerHTML=`
+    <b>PDG TAKEOFF SUMMARY</b><br>Project: ${proj} — ${date}<br>
+    ───────────────────────────────<br>
+    FOOTINGS (m³)<br>
+    Strip footings:    ${document.getElementById('s-strip').textContent} m³<br>
+    Pad footings:      ${document.getElementById('s-pads').textContent} m³<br>
+    Pile caps:         ${document.getElementById('s-pile-cap').textContent} m³<br>
+    FOOTINGS TOTAL:    ${document.getElementById('s-footings-total').textContent} m³<br>
+    ───────────────────────────────<br>
+    WALLS (m³)<br>
+    Pile shafts:       ${document.getElementById('s-pile-shaft').textContent} m³<br>
+    Foundation walls:  ${document.getElementById('s-walls').textContent} m³<br>
+    WALLS TOTAL:       ${document.getElementById('s-walls-total').textContent} m³<br>
+    ───────────────────────────────<br>
+    SLABS: ${document.getElementById('s-slabs').textContent} ft²<br>
+    DAMPPROOFING: ${document.getElementById('s-damp').textContent} ft²<br>
+    FRAMING<br>
+    Bsmt studs:        ${document.getElementById('fb-studs')?.textContent||0} pcs<br>
+    Bsmt plates:       ${document.getElementById('fb-plates')?.textContent||0} LF<br>
+    MF ext. studs:     ${document.getElementById('fmfe-studs')?.textContent||0} pcs<br>
+    MF ext. sheathing: ${document.getElementById('fmfe-sheath')?.textContent||0} sh<br>
+    MF int. studs:     ${document.getElementById('fmfi-studs')?.textContent||0} pcs<br>
+    MF floor sheath:   ${document.getElementById('fmf-floor')?.textContent||0} sh<br>
+    SF ext. studs:     ${document.getElementById('fsfe-studs')?.textContent||0} pcs<br>
+    SF int. studs:     ${document.getElementById('fsfi-studs')?.textContent||0} pcs<br>
+    TF ext. studs:     ${document.getElementById('ftfe-studs')?.textContent||0} pcs<br>
+    TF int. studs:     ${document.getElementById('ftfi-studs')?.textContent||0} pcs<br>
+    Headers:           ${document.getElementById('fh-total')?.textContent||0} pcs<br>
+    Total studs:       ${document.getElementById('f-total-studs')?.textContent||0} pcs<br>
+    Lumber budget:     ${document.getElementById('lc-total')?.textContent||'$0'}<br>
+    DRYWALL: ${document.getElementById('d-sheets').textContent} sheets<br>`;
+  document.getElementById('export-modal').classList.add('open');
+}
+function closeExport() { document.getElementById('export-modal').classList.remove('open'); }
+function doPrint() {
+  const proj=document.getElementById('project-name').value||'Unnamed';
+  const addr=document.getElementById('pi-address')?.value||'';
+  const community=document.getElementById('pi-community')?.value||'';
+  const date=new Date().toLocaleDateString('en-CA');
+  const notes=document.getElementById('notes-general')?.value||'';
+  const flags=document.getElementById('notes-flags')?.value||'';
+
+  const sRows=window._rows.strips.map(r=>{const t=catalogue.strips.find(s=>s.code===r.typeCode)||{};return`<tr><td>Strip footing</td><td>${r.typeCode}</td><td>${t.w||'—'}"×${t.d||'—'}"</td><td>${r.location}</td><td class="num">${r.lf} ft</td><td class="num">${m3fmt(stripVol(r))} m³</td></tr>`;}).join('');
+  const pRows=window._rows.pads.map(r=>{const t=catalogue.pads.find(p=>p.code===r.typeCode)||{};return`<tr><td>Pad footing</td><td>${r.typeCode}</td><td>${t.l||'—'}"×${t.w||'—'}"×${t.d||'—'}"</td><td>${r.location}</td><td class="num">${r.qty} pcs</td><td class="num">${m3fmt(padVol(r))} m³</td></tr>`;}).join('');
+  const capRows=window._rows.piles.map(r=>{const t=catalogue.piles.find(p=>p.code===r.typeCode)||{};return`<tr><td>Pile cap</td><td>${r.typeCode}</td><td>${t.capL||'—'}"×${t.capW||'—'}"×${t.capD||'—'}"</td><td>${r.location}</td><td class="num">${r.qty} pcs</td><td class="num">${m3fmt(pileCapVol(r))} m³</td></tr>`;}).join('');
+  const shaftRows=window._rows.piles.map(r=>{const t=catalogue.piles.find(p=>p.code===r.typeCode)||{};return`<tr class="pile-row"><td>Pile shaft</td><td>${r.typeCode}</td><td>⌀${t.shaftDia||'—'}" × ${t.shaftHt||'—'}' ht</td><td>${r.location}</td><td class="num">${r.qty} pcs</td><td class="num">${m3fmt(pileShaftVol(r))} m³</td></tr>`;}).join('');
+  const wRows=window._rows.walls.map(r=>{const t=catalogue.walls.find(w=>w.code===r.typeCode)||{};const ht=r.htOverride>0?r.htOverride:(t.defH||pv('p-wh'));return`<tr><td>Foundation wall</td><td>${r.typeCode}</td><td>${t.thick||'—'}" thk × ${ht}' ht</td><td>${r.location}</td><td class="num">${r.lf} ft</td><td class="num">${m3fmt(wallVol(r))} m³</td></tr>`;}).join('');
+  const dpRows=window._rows.damp.map(r=>{
+    const ht=(r.ht>0?r.ht:pv('p-wh'))-1;
+    return`<tr><td>${r.location}</td><td class="num">${r.lf} ft</td><td class="num">${r.ht>0?r.ht:pv('p-wh')} ft</td><td class="num">${ht.toFixed(2)} ft</td><td class="num">${Math.round(dampArea(r))} ft²</td></tr>`;
+  }).join('');
+  const waste=pv('p-waste');
+  const footingsTotal=document.getElementById('s-footings-total').textContent;
+  const wallsTotal=document.getElementById('s-walls-total').textContent;
+
+  const slRows=window._rows.slabs.map(r=>{const t=catalogue.slabs.find(s=>s.code===r.typeCode)||{};return`<tr><td>Slab</td><td>${r.typeCode}</td><td>${t.thick||'—'}" thk (ref)</td><td>${r.location}</td><td class="num" colspan="2">${r.area} ft²</td></tr>`;}).join('');
+
+  // ── BUILD FRAMING PDF SECTION ──
+  const sw_ = fPv('pf-stud-waste')||15, pw_ = fPv('pf-plate-waste')||10, shw_ = fPv('pf-sheath-waste')||10, flw_ = fPv('pf-floor-waste')||10;
+  // Price lookups for PDF
+  const lp_ = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const len26_  = document.getElementById('lp-stud-26-len')?.value  || '92';
+  const len24_  = document.getElementById('lp-stud-24-len')?.value  || '92';
+  const lenBsmt_= document.getElementById('lp-stud-bsmt-len')?.value || '92';
+  const priceStud26_  = len26_   === '104' ? lp_('lp-stud-26-104') : lp_('lp-stud-26-92');
+  const priceStud24_  = len24_   === '104' ? lp_('lp-stud-24-104') : lp_('lp-stud-24-92');
+  const priceStudBsmt_= lenBsmt_ === '104' ? lp_('lp-stud-24-104') : lp_('lp-stud-24-92');
+  const priceWallSh_ = lp_('lp-wall-sheath');
+  const priceFloorSh_ = lp_('lp-floor-sheath');
+  const pricePlate26_ = lp_('lp-plate-26');
+  const pricePlate24_ = lp_('lp-plate-24');
+  const $f = v => '$' + v.toLocaleString('en-CA', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Determine stud & plate price by wall type
+  function wallStudPrice(type) {
+    if (type === 'bsmt') return priceStudBsmt_;
+    if (isExtType(type)) return priceStud26_;
+    return priceStud24_;
+  }
+  function wallPlatePrice(type) {
+    return isExtType(type) ? pricePlate26_ : pricePlate24_;
+  }
+
+  const framingSections = [
+    {label:'Basement Walls', types:['bsmt'], keys:['framingBsmt'], isExt:[false], floorKey:null},
+    {label:'Main Floor — Ext. Walls (2×6)', types:['mf-ext'], keys:['framingMfExt'], isExt:[true], floorKey:null},
+    {label:'Main Floor — Int. Walls (2×4)', types:['mf-int'], keys:['framingMfInt'], isExt:[false], floorKey:null},
+    {label:'Main Floor — Floor Sheathing', types:[], keys:[], isExt:[], floorKey:'framingFloorMF'},
+    {label:'Second Floor — Ext. Walls (2×6)', types:['sf-ext'], keys:['framingStExt'], isExt:[true], floorKey:null},
+    {label:'Second Floor — Int. Walls (2×4)', types:['sf-int'], keys:['framingStInt'], isExt:[false], floorKey:null},
+    {label:'Second Floor — Floor Sheathing', types:[], keys:[], isExt:[], floorKey:'framingFloorSF'},
+    {label:'Third Floor — Ext. Walls (2×6)', types:['tf-ext'], keys:['framingTfExt'], isExt:[true], floorKey:null},
+    {label:'Third Floor — Int. Walls (2×4)', types:['tf-int'], keys:['framingTfInt'], isExt:[false], floorKey:null},
+    {label:'Third Floor — Floor Sheathing', types:[], keys:[], isExt:[], floorKey:'framingFloorTF'},
+  ];
+  let fwRows = ''; let anyFraming = false;
+  let fwGrandCost = 0;
+  framingSections.forEach(sec => {
+    if (sec.floorKey) {
+      const frows = window._rows[sec.floorKey]||[];
+      if (!frows.length || frows.every(r=>!r.area)) return;
+      anyFraming = true;
+      fwRows += `<tr style="background:#edf7f2"><td colspan="9" style="font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#1a7a4a;padding:6px 10px">${sec.label} (3/4″ T&G OSB)</td></tr>`;
+      frows.forEach(r => {
+        if (r.area > 0) {
+          const sh=calcFloorSheath(r.area||0,flw_);
+          const cost = sh * priceFloorSh_;
+          fwGrandCost += cost;
+          fwRows += `<tr><td>${r.location||'—'}</td><td class="num">${r.area} ft²</td><td></td><td></td><td></td><td></td><td></td><td class="num">${sh} sh</td><td class="num">${$f(cost)}</td></tr>`;
+        }
+      });
+      return;
+    }
+    sec.types.forEach((type,ti) => {
+      const rows = window._rows[sec.keys[ti]]||[];
+      if (!rows.length || rows.every(r=>!r.lf)) return;
+      anyFraming = true;
+      const ext = sec.isExt[ti];
+      fwRows += `<tr style="background:#f0f4f8"><td colspan="9" style="font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#1B3A5C;padding:6px 10px">${sec.label}</td></tr>`;
+      const ht = getWallHt(type);
+      let secCost = 0;
+      rows.forEach(r => {
+        if (!r.lf) return;
+        const sp = getRowSpacing(type, r);
+        const studs = calcStuds(r.lf, r.opens, sp, sw_);
+        const plates = calcPlates(r.lf, pw_);
+        const sheath = ext ? calcSheathing(r.lf, ht, r.opens, shw_) : 0;
+        const block = ext ? calcBlocking(studs) : 0;
+        const opensCount = (r.opens||[]).reduce((s,o)=>s+(o.qty||1),0);
+        // Per-row cost: studs + plates + sheathing
+        const studCost = studs * wallStudPrice(type);
+        const platePcs = Math.ceil(plates / 16);
+        const plateCost = platePcs * wallPlatePrice(type);
+        const sheathCost = ext ? sheath * priceWallSh_ : 0;
+        const rowCost = studCost + plateCost + sheathCost;
+        secCost += rowCost;
+        fwRows += `<tr><td>${r.location||'—'}</td><td class="num">${r.lf} LF</td><td class="num">${sp}″ o.c.</td><td class="num">${opensCount}</td><td class="num">${studs}</td><td class="num">${plates} LF</td><td class="num">${ext?sheath+' sh':'—'}</td><td class="num">${ext?block+' pcs':'—'}</td><td class="num">${$f(rowCost)}</td></tr>`;
+      });
+      fwGrandCost += secCost;
+    });
+  });
+
+  let framingHtml = '';
+  if (anyFraming) {
+    framingHtml += `<h2>Framing — wall runs &amp; sheathing</h2>
+    <table>
+      <tr><th>Location</th><th class="num">Length / Area</th><th class="num">Spacing</th><th class="num">Opens</th><th class="num">Studs</th><th class="num">Plates</th><th class="num">Sheath</th><th class="num">Blocking</th><th class="num">Cost</th></tr>
+      ${fwRows}
+      <tr class="total-row"><td colspan="4">Total studs (all floors, incl. waste)</td><td class="num">${document.getElementById('f-total-studs')?.textContent||0} pcs</td><td colspan="3"></td><td class="num">${$f(fwGrandCost)}</td></tr>
+    </table>`;
+  }
+
+  // Headers with per-line cost
+  let fhRows = '';
+  let anyH = false;
+  let fhGrandCost = 0;
+  (window._rows.framingHeaders||[]).forEach(r => {
+    if (!r.w) return; anyH = true;
+    const size = headerSize(r.w||0);
+    const pcs = (r.qty||1)*2;
+    let unitPrice = 0;
+    if (size === '2×8')          unitPrice = lp_('lp-hdr-2x8');
+    else if (size === '2×10')    unitPrice = lp_('lp-hdr-2x10');
+    else if (size.startsWith('2×12')) unitPrice = lp_('lp-hdr-2x12');
+    else if (size.includes('LVL')) unitPrice = lp_('lp-lvl') * 12;
+    const hdrCost = pcs * unitPrice;
+    fhGrandCost += hdrCost;
+    fhRows += `<tr><td>${r.label||'—'}</td><td class="num">${r.w} ft</td><td class="num">${r.qty||1}</td><td>${size}</td><td class="num">${pcs} pcs</td><td class="num">${$f(unitPrice)}/pc</td><td class="num">${$f(hdrCost)}</td></tr>`;
+  });
+  if (anyH) {
+    framingHtml += `<h2>Framing — headers</h2>
+    <table>
+      <tr><th>Location</th><th class="num">Opening</th><th class="num">Qty</th><th>Member size</th><th class="num">Pcs needed</th><th class="num">Unit price</th><th class="num">Cost</th></tr>
+      ${fhRows}
+      <tr class="total-row"><td colspan="6">Total header cost</td><td class="num">${$f(fhGrandCost)}</td></tr>
+    </table>`;
+  }
+
+  // Lumber budget summary
+  const lcTotal = document.getElementById('lc-total')?.textContent||'$0';
+  const budgetItems = [
+    ['2×6 ext. studs', document.getElementById('lc-stud-26')?.textContent],
+    ['2×4 int. studs', document.getElementById('lc-stud-24-int')?.textContent],
+    ['2×4 bsmt. studs', document.getElementById('lc-stud-24-bsmt')?.textContent],
+    ['2×6 plate stock', document.getElementById('lc-plate-26')?.textContent],
+    ['2×4 plate stock', document.getElementById('lc-plate-24')?.textContent],
+    ['Wall sheathing', document.getElementById('lc-wall-sheath')?.textContent],
+    ['Floor sheathing', document.getElementById('lc-floor-sheath')?.textContent],
+    ['Headers', document.getElementById('lc-headers')?.textContent],
+  ].filter(b => b[1] && parseFloat(b[1].replace(/,/g,'')) > 0);
+  if (budgetItems.length > 0) {
+    framingHtml += `<h2>Lumber budget summary (materials only, before tax)</h2>
+    <table>
+      <tr><th>Item</th><th class="num">Cost</th></tr>
+      ${budgetItems.map(b=>`<tr><td>${b[0]}</td><td class="num">$${b[1]}</td></tr>`).join('')}
+      <tr class="total-row"><td>Total lumber budget</td><td class="num">${lcTotal}</td></tr>
+    </table>`;
+  }
+  // ── END FRAMING PDF ──
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PDG Takeoff — ${proj}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+    body{font-family:'DM Sans',sans-serif;font-size:12px;color:#1a1a1a;padding:32px 40px;max-width:980px;margin:0 auto}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px}
+    h1{font-size:20px;font-weight:600;color:#1B3A5C}
+    .meta{font-size:11px;color:#888;margin-bottom:20px}
+    h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#1B3A5C;margin:20px 0 6px;border-bottom:2px solid #C9A84C;padding-bottom:3px}
+    table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    th{background:#1B3A5C;color:#fff;padding:6px 10px;font-size:10px;font-weight:600;text-align:left}
+    td{padding:5px 10px;border-bottom:1px solid #e8e5e0;font-size:11px}
+    tr:nth-child(even) td{background:#f9f8f6}
+    .num{text-align:right;font-family:'DM Mono',monospace}
+    .total-row td{font-weight:600;background:#fff8e6;border-top:2px solid #C9A84C;font-family:'DM Mono',monospace}
+    .pile-row td{background:#eef4fb}
+    .notes-box{background:#f9f8f6;border:1px solid #e0ddd8;border-radius:6px;padding:10px;font-size:11px;line-height:1.6;white-space:pre-wrap;margin-bottom:14px}
+    .footer{margin-top:36px;font-size:10px;color:#999;text-align:center;border-top:1px solid #e0ddd8;padding-top:10px}
+    @media print{body{padding:16px}}
+  </style></head><body>
+  <div class="hdr"><h1>PDG — Takeoff Summary</h1><div style="font-size:11px;color:#888">${date}</div></div>
+  <div class="meta">${proj}${addr?' · '+addr:''}${community?' · '+community:''}</div>
+
+  <h2>Footings — strips, pads &amp; pile caps</h2>
+  <table>
+    <tr><th>Element</th><th>Type</th><th>Dimensions</th><th>Location</th><th class="num">Input qty</th><th class="num">m³</th></tr>
+    ${sRows}${pRows}${capRows}
+    <tr class="total-row"><td colspan="5">Footings order qty (incl. ${waste}% waste)</td><td class="num">${footingsTotal} m³</td></tr>
+  </table>
+
+  <h2>Walls — pile shafts &amp; foundation walls</h2>
+  <table>
+    <tr><th>Element</th><th>Type</th><th>Dimensions</th><th>Location</th><th class="num">Input qty</th><th class="num">m³</th></tr>
+    ${shaftRows}${wRows}
+    <tr class="total-row"><td colspan="5">Walls order qty (incl. ${waste}% waste)</td><td class="num">${wallsTotal} m³</td></tr>
+  </table>
+
+  <h2>Slabs on grade</h2>
+  <table>
+    <tr><th>Element</th><th>Type</th><th>Thickness (ref)</th><th>Location</th><th class="num" colspan="2">Area (ft²)</th></tr>
+    ${slRows}
+    <tr class="total-row"><td colspan="5">Total slab area</td><td class="num">${document.getElementById('s-slabs').textContent} ft²</td></tr>
+  </table>
+
+  <h2>Dampproofing</h2>
+  <table>
+    <tr><th>Location</th><th class="num">Length (ft)</th><th class="num">Wall ht (ft)</th><th class="num">Net ht (ft)</th><th class="num">Area (ft²)</th></tr>
+    ${dpRows}
+    <tr class="total-row"><td colspan="4">Total dampproofing area</td><td class="num">${document.getElementById('s-damp').textContent} ft²</td></tr>
+  </table>
+
+  ${framingHtml}
+
+  ${notes?`<h2>Notes</h2><div class="notes-box">${notes}</div>`:''}
+  ${flags?`<h2>Flags / Assumptions</h2><div class="notes-box">${flags}</div>`:''}
+  <div class="footer">Partners Development Group · Internal Use Only · ${date}</div>
+  </body></html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  closeExport();
+}
+
+// ═══════════════════════════════════════════
+// INIT — fetch catalogue.json then boot
+// ═══════════════════════════════════════════
+(async function init() {
+  // Try to load external catalogue.json (same directory as index.html)
+  try {
+    const resp = await fetch('catalogue.json', {cache:'no-cache'});
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.strips || data.pads || data.walls || data.slabs || data.piles) {
+        DEFAULT_CATALOGUE = Object.assign(JSON.parse(JSON.stringify(HARDCODED_CATALOGUE)), data);
+        console.log('✓ Loaded catalogue.json');
+      }
+    }
+  } catch(e) {
+    console.log('ℹ No catalogue.json found — using built-in defaults');
+  }
+
+  // Apply defaults to working catalogue
+  cat = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+  catalogue = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+
+  window._rows = blankRows();
+  let projs = getProjects();
+  if (projs.length === 0) {
+    const id = genId();
+    projs = [{id, name:'New Project', date:new Date().toISOString(), data:null}];
+    saveProjects(projs);
+    currentProjId = id;
+    loadBlankProject();
+  } else {
+    const last = projs[projs.length-1];
+    currentProjId = last.id;
+    if (last.data) { applySnap(last.data); } else { loadBlankProject(); }
+  }
+  renderProjBar();
+  if (!document.getElementById('pi-date').value) {
+    document.getElementById('pi-date').value = new Date().toISOString().split('T')[0];
+  }
+})();
+</script>
+</body>
+</html>
