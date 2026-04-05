@@ -1,0 +1,102 @@
+{
+  "strips": [
+    {
+      "code": "SF1",
+      "w": 18,
+      "d": 8
+    },
+    {
+      "code": "SF2",
+      "w": 28,
+      "d": 8
+    },
+    {
+      "code": "SF3",
+      "w": 24,
+      "d": 8
+    }
+  ],
+  "pads": [
+    {
+      "code": "24x24pad",
+      "l": 24,
+      "w": 24,
+      "d": 10
+    },
+    {
+      "code": "30x30pad",
+      "l": 30,
+      "w": 30,
+      "d": 10
+    },
+    {
+      "code": "36x36pad",
+      "l": 36,
+      "w": 36,
+      "d": 10
+    },
+    {
+      "code": "42x42pad",
+      "l": 42,
+      "w": 42,
+      "d": 10
+    }
+  ],
+  "piles": [
+    {
+      "code": "12\" pile",
+      "capL": 24,
+      "capW": 24,
+      "capD": 10,
+      "shaftDia": 12,
+      "shaftHt": 6
+    },
+    {
+      "code": "16\" pile",
+      "capL": 24,
+      "capW": 24,
+      "capD": 10,
+      "shaftDia": 16,
+      "shaftHt": 6
+    },
+    {
+      "code": "10\" pile",
+      "capL": 24,
+      "capW": 24,
+      "capD": 10,
+      "shaftDia": 10,
+      "shaftHt": 6
+    }
+  ],
+  "walls": [
+    {
+      "code": "9'3\"wall",
+      "thick": 8,
+      "defH": 9.25
+    },
+    {
+      "code": "8'3\"wall",
+      "thick": 8,
+      "defH": 8.25
+    },
+    {
+      "code": "garage wall",
+      "thick": 8,
+      "defH": 6
+    }
+  ],
+  "slabs": [
+    {
+      "code": "basement slab",
+      "thick": 3
+    },
+    {
+      "code": "garage slab",
+      "thick": 4
+    },
+    {
+      "code": "driveway/sidewalk slab",
+      "thick": 4
+    }
+  ]
+}
