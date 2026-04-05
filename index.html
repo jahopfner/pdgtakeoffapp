@@ -944,6 +944,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <button class="btn-outline" onclick="exportCatalogue()">⬇ Export catalogue.json</button>
         <button class="btn-outline" onclick="document.getElementById('cat-import').click()">⬆ Import catalogue</button>
         <input type="file" id="cat-import" accept=".json" style="display:none" onchange="importCatalogue(this)">
+        <button class="btn-outline" onclick="resetCatalogueToDefaults()" style="border-color:rgba(192,57,43,.25)" onmouseover="this.style.background='#fdf0ee';this.style.color='#c0392b';this.style.borderColor='rgba(192,57,43,.4)'" onmouseout="this.style.background='';this.style.color='';this.style.borderColor='rgba(192,57,43,.25)'">↻ Reset to deployed defaults</button>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
@@ -2075,6 +2076,31 @@ function importCatalogue(input) {
   };
   reader.readAsText(file);
   input.value='';
+}
+
+async function resetCatalogueToDefaults() {
+  if (!confirm('Reset catalogue to deployed defaults (catalogue.json)? This will overwrite your current catalogue values. Click "Save catalogue" after to apply.')) return;
+  try {
+    const resp = await fetch('catalogue.json', {cache:'no-store'});
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.strips||data.pads||data.walls||data.slabs||data.piles) {
+        DEFAULT_CATALOGUE = Object.assign(JSON.parse(JSON.stringify(HARDCODED_CATALOGUE)), data);
+        cat = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+        ['strips','pads','piles','walls','slabs'].forEach(t=>renderCatTable(t));
+        alert('Catalogue reset to deployed defaults. Click "Save catalogue" to apply to this project.');
+      } else { alert('catalogue.json format not recognized.'); }
+    } else {
+      // No external file — fall back to hardcoded
+      cat = JSON.parse(JSON.stringify(HARDCODED_CATALOGUE));
+      ['strips','pads','piles','walls','slabs'].forEach(t=>renderCatTable(t));
+      alert('No catalogue.json found on server — reset to built-in defaults. Click "Save catalogue" to apply.');
+    }
+  } catch(e) {
+    cat = JSON.parse(JSON.stringify(HARDCODED_CATALOGUE));
+    ['strips','pads','piles','walls','slabs'].forEach(t=>renderCatTable(t));
+    alert('Could not fetch catalogue.json — reset to built-in defaults. Click "Save catalogue" to apply.');
+  }
 }
 
 // ═══════════════════════════════════════════
