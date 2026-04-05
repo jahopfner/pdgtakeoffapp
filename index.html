@@ -2161,7 +2161,15 @@ function applySnap(snap) {
     setS('lp-stud-24-len',snap.presets.lpStud24Len);
     setS('lp-stud-bsmt-len',snap.presets.lpStudBsmtLen);
   }
-  if(snap.catalogue) catalogue=snap.catalogue;
+  if(snap.catalogue) {
+    // Merge: start with fetched defaults, then overlay project-specific overrides
+    catalogue = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+    Object.keys(snap.catalogue).forEach(k => {
+      if(Array.isArray(snap.catalogue[k]) && snap.catalogue[k].length > 0) {
+        catalogue[k] = snap.catalogue[k];
+      }
+    });
+  }
   if(snap.rows) {
     window._rows=Object.assign(blankRows(),snap.rows);
     renderStrips(); renderPads(); renderPiles(); renderWalls(); renderSlabs(); renderDamp();
@@ -2490,20 +2498,33 @@ function doPrint() {
   // Try to load external catalogue.json (same directory as index.html)
   try {
     const resp = await fetch('catalogue.json', {cache:'no-cache'});
+    console.log('catalogue.json fetch status:', resp.status);
     if (resp.ok) {
       const data = await resp.json();
       if (data.strips || data.pads || data.walls || data.slabs || data.piles) {
         DEFAULT_CATALOGUE = Object.assign(JSON.parse(JSON.stringify(HARDCODED_CATALOGUE)), data);
-        console.log('✓ Loaded catalogue.json');
+        console.log('✓ Loaded catalogue.json —', 
+          (data.strips||[]).length, 'strips,',
+          (data.pads||[]).length, 'pads,',
+          (data.piles||[]).length, 'piles,',
+          (data.walls||[]).length, 'walls,',
+          (data.slabs||[]).length, 'slabs');
+        console.log('  Sample strip:', JSON.stringify((data.strips||[])[0]));
+      } else {
+        console.warn('⚠ catalogue.json loaded but no valid keys found');
       }
+    } else {
+      console.warn('⚠ catalogue.json returned status', resp.status);
     }
   } catch(e) {
-    console.log('ℹ No catalogue.json found — using built-in defaults');
+    console.log('ℹ No catalogue.json found — using built-in defaults:', e.message);
   }
 
   // Apply defaults to working catalogue
   cat = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
   catalogue = JSON.parse(JSON.stringify(DEFAULT_CATALOGUE));
+  console.log('Catalogue initialized — strips:', catalogue.strips.length, 
+    'first strip:', JSON.stringify(catalogue.strips[0]))
 
   window._rows = blankRows();
   let projs = getProjects();
